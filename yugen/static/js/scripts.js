@@ -1,5 +1,6 @@
-// Function to handle tab navigation
+// tab navigation
 function openTab(evt, tabName) {
+
     // Get all elements with class="tab-content" and hide them
     var tabContent = document.getElementsByClassName("tab-content");
     for (var i = 0; i < tabContent.length; i++) {
@@ -17,12 +18,16 @@ function openTab(evt, tabName) {
     evt.currentTarget.className += " active";
 }
 
+
+
 // By default, open the Data Import tab
 document.getElementById("defaultTab").click();
 
-// Handle file upload
+
+
+// file upload
 document.getElementById('upload-form').addEventListener('submit', function (e) {
-    e.preventDefault(); // Prevent form submission
+    e.preventDefault();
 
     // Get the file from the input
     var fileInput = document.getElementById('file-upload');
@@ -42,7 +47,6 @@ document.getElementById('upload-form').addEventListener('submit', function (e) {
             if (data.message) {
                 document.getElementById('upload-status').innerHTML = `<p>${data.message}</p>`;
                 
-                // Automatically load data info after upload
                 loadDataInfo();
             } else {
                 document.getElementById('upload-status').innerHTML = `<p class="error">${data.error}</p>`;
@@ -57,7 +61,9 @@ document.getElementById('upload-form').addEventListener('submit', function (e) {
     }
 });
 
-// Function to load data info automatically
+
+
+// handle loading data info
 function loadDataInfo() {
     fetch('/data-info')
     .then(response => response.json())
@@ -79,7 +85,8 @@ function loadDataInfo() {
     });
 }
 
-// Handle loading data profiling info
+
+// handle loading data profiling info
 document.getElementById('load-profile-btn').addEventListener('click', function () {
     fetch('/profile')
     .then(response => response.json())
