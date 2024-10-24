@@ -3,50 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="static/css/styles.css">
     <title>Data Analysis Framework</title>
-    <link rel="stylesheet" type="text/css" href="static/css/styles.css">
-    <script src="static/js/scripts.js"></script>
 </head>
-
 <body>
-    <h1>Data Analysis Framework</h1>
-    <div>
-        <div class="tab" onclick="openTab('data-import')">Data Import</div>
-        <div class="tab" onclick="openTab('data-profiling')">Data Profiling</div>
-        <div class="tab" onclick="openTab('data-cleaning')">Data Cleaning</div>
-        <div class="tab" onclick="openTab('modeling')">Modeling</div>
-        <div class="tab" onclick="openTab('visualization')">Visualization</div>
-    </div>
-    
-    <div id="data-import" class="tab-content active">
-        <h2>Data Import</h2>
-        <p>Upload your data file here.</p>
-        <form action="/upload" method="POST" enctype="multipart/form-data">
-            <input type="file" name="file" accept=".csv">
-            <button type="submit">Upload</button>
-        </form>
-        {% if message %}
-            <p>{{ message }}</p>
-        {% endif %}
-        <div id="data-info-container"></div>
+    <div class="container">
+        <h1>Data Analysis Framework</h1>
+        
+        <div class="tab">
+            <button class="tab-button active" onclick="openTab(event, 'dataImport')" id="defaultTab">Data Import</button>
+            <button class="tab-button" onclick="openTab(event, 'dataProfiling')">Data Profiling</button>
+            <button class="tab-button" onclick="openTab(event, 'dataCleaning')">Data Cleaning</button>
+            <button class="tab-button" onclick="openTab(event, 'modeling')">Modeling</button>
+        </div>
+
+        <!-- Data Import Section -->
+        <div id="dataImport" class="tab-content" style="display: block;">
+            <h2>Data Import</h2>
+            <form id="upload-form" enctype="multipart/form-data">
+                <input type="file" id="file-upload" name="file" accept=".csv,.xlsx" required>
+                <button type="submit">Upload</button>
+            </form>
+            <div id="upload-status"></div>
+            <h3>Data Info</h3>
+            <div id="data-info-container"></div> <!-- Moved Data Info here -->
+        </div>
+
+        <!-- Data Profiling Section -->
+        <div id="dataProfiling" class="tab-content" style="display: none;">
+            <h2>Data Profiling</h2>
+            <button id="load-profile-btn">Load Profile</button>
+            <div id="profiling-container"></div>
+        </div>
+
+        <!-- Other sections... -->
+        <div id="dataCleaning" class="tab-content" style="display: none;">
+            <h2>Data Cleaning</h2>
+            <p>Data Cleaning Section</p>
+        </div>
+
+        <div id="modeling" class="tab-content" style="display: none;">
+            <h2>Modeling</h2>
+            <p>Modeling Section</p>
+        </div>
     </div>
 
-    <div id="data-profiling" class="tab-content">
-        <h2>Data Profiling</h2>
-        <p>View statistics about your data.</p>
-    </div>
-    <div id="data-cleaning" class="tab-content">
-        <h2>Data Cleaning</h2>
-        <p>Clean and transform your data.</p>
-    </div>
-    <div id="modeling" class="tab-content">
-        <h2>Modeling</h2>
-        <p>Create and train models.</p>
-    </div>
-    <div id="visualization" class="tab-content">
-        <h2>Visualization</h2>
-        <p>Visualize your data and model results.</p>
-    </div>
+    <script src="static/js/scripts.js"></script>
 </body>
-
 </html>
