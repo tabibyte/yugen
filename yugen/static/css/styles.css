@@ -1,0 +1,18 @@
+.tab {
+    display: inline-block;
+    padding: 10px;
+    cursor: pointer;
+    background-color: #f1f1f1;
+    margin-right: 5px;
+}
+.tab-content {
+    display: none;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    margin-top: 10px;
+}
+.active {
+    display: block;
+}
+
