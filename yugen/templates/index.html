@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="static/css/styles.css">
+    <title>Data Analysis Framework</title>
+</head>
+<body>
+    <div class="container">
+        <h1>Data Analysis Framework</h1>
+        
+        <div class="tab">
+            <button class="tab-button active" onclick="openTab(event, 'dataImport')" id="defaultTab">Data Import</button>
+            <button class="tab-button" onclick="openTab(event, 'dataProfiling')">Data Profiling</button>
+            <button class="tab-button" onclick="openTab(event, 'dataCleaning')">Data Cleaning</button>
+            <button class="tab-button" onclick="openTab(event, 'modeling')">Modeling</button>
+        </div>
+
+        <!-- Data Import Section -->
+        <div id="dataImport" class="tab-content" style="display: block;">
+            <h2>Data Import</h2>
+            <form id="upload-form" enctype="multipart/form-data">
+                <input type="file" id="file-upload" name="file" accept=".csv,.xlsx" required>
+                <button type="submit">Upload</button>
+            </form>
+            <div id="upload-status"></div>
+            <h3>Data Info</h3>
+            <div id="data-info-container"></div> <!-- Moved Data Info here -->
+        </div>
+
+        <!-- Data Profiling Section -->
+        <div id="dataProfiling" class="tab-content" style="display: none;">
+            <h2>Data Profiling</h2>
+            <button id="load-profile-btn">Load Profile</button>
+            <div id="profiling-container"></div>
+        </div>
+
+        <!-- Other sections... -->
+        <div id="dataCleaning" class="tab-content" style="display: none;">
+            <h2>Data Cleaning</h2>
+            <p>Data Cleaning Section</p>
+        </div>
+
+        <div id="modeling" class="tab-content" style="display: none;">
+            <h2>Modeling</h2>
+            <p>Modeling Section</p>
+        </div>
+    </div>
+
+    <script src="static/js/scripts.js"></script>
+</body>
+</html>
