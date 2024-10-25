@@ -1,6 +1,5 @@
-// tab navigation
+// Function to handle tab navigation
 function openTab(evt, tabName) {
-
     // Get all elements with class="tab-content" and hide them
     var tabContent = document.getElementsByClassName("tab-content");
     for (var i = 0; i < tabContent.length; i++) {
@@ -18,16 +17,12 @@ function openTab(evt, tabName) {
     evt.currentTarget.className += " active";
 }
 
-
-
 // By default, open the Data Import tab
 document.getElementById("defaultTab").click();
 
-
-
-// file upload
+// Handle file upload
 document.getElementById('upload-form').addEventListener('submit', function (e) {
-    e.preventDefault();
+    e.preventDefault(); // Prevent form submission
 
     // Get the file from the input
     var fileInput = document.getElementById('file-upload');
@@ -47,7 +42,11 @@ document.getElementById('upload-form').addEventListener('submit', function (e) {
             if (data.message) {
                 document.getElementById('upload-status').innerHTML = `<p>${data.message}</p>`;
                 
+                // Load data info after upload
                 loadDataInfo();
+                
+                // Load the head of the DataFrame
+                document.getElementById('data-head-container').innerHTML = data.head_data; // Show the head of the DataFrame
             } else {
                 document.getElementById('upload-status').innerHTML = `<p class="error">${data.error}</p>`;
             }
@@ -61,9 +60,7 @@ document.getElementById('upload-form').addEventListener('submit', function (e) {
     }
 });
 
-
-
-// handle loading data info
+// Function to load data info
 function loadDataInfo() {
     fetch('/data-info')
     .then(response => response.json())
@@ -85,10 +82,13 @@ function loadDataInfo() {
     });
 }
 
-
-// handle loading data profiling info
+// Handle loading data profiling info with data type selection
 document.getElementById('load-profile-btn').addEventListener('click', function () {
-    fetch('/profile')
+    // Get the selected data type (original or cleaned)
+    var dataType = document.getElementById('data-select').value;
+
+    // Fetch the profile data based on the selected data type
+    fetch(`/profile?data_type=${dataType}`)
     .then(response => response.json())
     .then(data => {
         if (data.error) {
@@ -110,5 +110,48 @@ document.getElementById('load-profile-btn').addEventListener('click', function (
     .catch(error => {
         console.error('Error:', error);
         document.getElementById('profiling-container').innerHTML = '<p class="error">An error occurred while loading data profiling.</p>';
+    });
+});
+
+// Handle data cleaning form submission
+document.getElementById('clean-data-btn').addEventListener('click', function () {
+    // Get the selected cleaning operations (e.g., drop nulls, remove duplicates)
+    var dropNulls = document.getElementById('drop-nulls').checked;
+    var dropDuplicates = document.getElementById('drop-duplicates').checked;
+    var columnsToDrop = document.getElementById('columns-to-drop').value;
+
+    var cleaningOptions = {
+        drop_nulls: dropNulls,
+        drop_duplicates: dropDuplicates,
+        columns_to_drop: columnsToDrop.split(',').map(col => col.trim())
+    };
+
+    // Send cleaning options to the backend
+    fetch('/clean-data', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(cleaningOptions),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message) {
+            document.getElementById('cleaning-status').innerHTML = `<p>${data.message}</p>`;
+            // Update the profiling dropdown menu with the new "Cleaned Data" option
+            var select = document.getElementById('data-select');
+            if (!select.querySelector('option[value="cleaned"]')) {
+                var option = document.createElement('option');
+                option.value = 'cleaned';
+                option.text = 'Cleaned Data';
+                select.add(option);
+            }
+        } else {
+            document.getElementById('cleaning-status').innerHTML = `<p class="error">${data.error}</p>`;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('cleaning-status').innerHTML = '<p class="error">An error occurred during cleaning.</p>';
     });
 });

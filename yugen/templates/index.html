@@ -26,21 +26,38 @@
             </form>
             <div id="upload-status"></div>
             <h3>Data Info</h3>
-            <div id="data-info-container"></div> <!-- Moved Data Info here -->
+            <div id="data-info-container"></div>
+            <div id="data-head-container"></div>
         </div>
 
         <!-- Data Profiling Section -->
         <div id="dataProfiling" class="tab-content" style="display: none;">
             <h2>Data Profiling</h2>
+            
+            <label for="data-select">Choose data:</label>
+            <select id="data-select">
+                <option value="original">Original Data</option>
+                <option value="cleaned">Cleaned Data</option>
+            </select>
+        
             <button id="load-profile-btn">Load Profile</button>
             <div id="profiling-container"></div>
         </div>
 
-        <!-- Other sections... -->
+        <!-- Data Cleaning -->
         <div id="dataCleaning" class="tab-content" style="display: none;">
             <h2>Data Cleaning</h2>
-            <p>Data Cleaning Section</p>
+        
+            <label><input type="checkbox" id="drop-nulls"> Drop Rows with Null Values</label><br>
+            <label><input type="checkbox" id="drop-duplicates"> Remove Duplicates</label><br>
+            
+            <label>Columns to Drop (comma-separated):</label>
+            <input type="text" id="columns-to-drop" placeholder="e.g., column1, column2"><br><br>
+        
+            <button id="clean-data-btn">Apply Cleaning</button>
+            <div id="cleaning-status"></div>
         </div>
+        
 
         <div id="modeling" class="tab-content" style="display: none;">
             <h2>Modeling</h2>

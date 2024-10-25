@@ -1,3 +1,4 @@
 
 *.csv
 *.pyc
+/yugen/utils/__pycache__
