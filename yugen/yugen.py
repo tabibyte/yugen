@@ -99,7 +99,7 @@ def clean_data_route():
     temp = tempfile.NamedTemporaryFile(delete=False, suffix='.csv')
     cleaned_dataframe.to_csv(temp.name, index=False)
     global cleaned_dataframe_filepath
-    cleaned_dataframe_filepath = temp.name  # Store the cleaned dataframe filepath
+    cleaned_dataframe_filepath = temp.name
 
     return jsonify({'message': 'Data cleaned successfully!'})
 

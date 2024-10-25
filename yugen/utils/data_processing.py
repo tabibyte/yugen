@@ -41,6 +41,7 @@ def profile_data(dataframe):
     }
     
 def clean_data(df, options):
+    """Cleaning the data with given options"""
     if options.get('drop_nulls'):
         df = df.dropna()
     
@@ -55,4 +56,5 @@ def clean_data(df, options):
 
 
 def get_head(dataframe):
+    """Get the head of the imported data"""
     return dataframe.head().to_html(classes='dataframe',header=True,index=True)
