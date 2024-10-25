@@ -23,7 +23,7 @@ def get_data_info(dataframe):
     return {
         'rows': dataframe.shape[0],
         'columns': dataframe.shape[1],
-        'column_names': dataframe.columns.tolist(),
+        'column_names': dataframe.columns.tolist()
     }
 
 
@@ -40,3 +40,21 @@ def profile_data(dataframe):
         'missing': missing
     }
     
+def clean_data(df, options):
+    """Cleaning the data with given options"""
+    if options.get('drop_nulls'):
+        df = df.dropna()
+    
+    if options.get('drop_duplicates'):
+        df = df.drop_duplicates()
+
+    columns_to_drop = options.get('columns_to_drop', [])
+    if columns_to_drop:
+        df = df.drop(columns=columns_to_drop, errors='ignore')
+
+    return df
+
+
+def get_head(dataframe):
+    """Get the head of the imported data"""
+    return dataframe.head().to_html(classes='dataframe',header=True,index=True)
