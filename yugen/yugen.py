@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, jsonify
 import pandas as pd
 from utils.data_processing import load_csv, get_data_info, profile_data, save_dataframe, clean_data, get_head
 import tempfile
-
+ 
 app = Flask(__name__)
 
 # Global variables to hold the file paths of imported and cleaned dataframes
