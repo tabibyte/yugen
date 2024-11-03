@@ -1,157 +1,107 @@
 // Function to handle tab navigation
 function openTab(evt, tabName) {
-    // Get all elements with class="tab-content" and hide them
     var tabContent = document.getElementsByClassName("tab-content");
     for (var i = 0; i < tabContent.length; i++) {
         tabContent[i].style.display = "none";
     }
 
-    // Get all elements with class="tab-button" and remove the class "active"
     var tabButtons = document.getElementsByClassName("tab-button");
     for (var i = 0; i < tabButtons.length; i++) {
         tabButtons[i].className = tabButtons[i].className.replace(" active", "");
     }
 
-    // Show the current tab and add "active" class to the button that opened the tab
     document.getElementById(tabName).style.display = "block";
     evt.currentTarget.className += " active";
 }
 
-// By default, open the Data Import tab
+// Open default tab
 document.getElementById("defaultTab").click();
 
 // Handle file upload
-document.getElementById('upload-form').addEventListener('submit', function (e) {
-    e.preventDefault(); // Prevent form submission
+document.getElementById('upload-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const fileInput = document.getElementById('file-input');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        showError('Please select a file');
+        return;
+    }
 
-    // Get the file from the input
-    var fileInput = document.getElementById('file-upload');
-    var file = fileInput.files[0];
+    try {
+        const formData = new FormData();
+        formData.append('file_path', file.path);
 
-    if (file) {
-        var formData = new FormData();
-        formData.append('file', file);
-
-        // Send the file to the Flask backend
-        fetch('/upload', {
+        const response = await fetch('/data/upload', {
             method: 'POST',
             body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.message) {
-                document.getElementById('upload-status').innerHTML = `<p>${data.message}</p>`;
-                
-                // Load data info after upload
-                loadDataInfo();
-                
-                // Load the head of the DataFrame
-                document.getElementById('data-head-container').innerHTML = data.head_data; // Show the head of the DataFrame
-            } else {
-                document.getElementById('upload-status').innerHTML = `<p class="error">${data.error}</p>`;
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            document.getElementById('upload-status').innerHTML = '<p class="error">An error occurred during file upload.</p>';
         });
-    } else {
-        document.getElementById('upload-status').innerHTML = '<p class="error">Please select a file to upload.</p>';
+
+        const data = await response.json();
+        
+        if (data.error) {
+            showError(data.error);
+        } else {
+            showSuccess('File processed successfully');
+            updateDataInfo(data);
+            enableTabs();
+        }
+    } catch (error) {
+        showError('Error processing file');
+        console.error(error);
     }
 });
 
-// Function to load data info
-function loadDataInfo() {
-    fetch('/data-info')
-    .then(response => response.json())
-    .then(data => {
-        if (data.error) {
-            document.getElementById('data-info-container').innerHTML = `<p class="error">${data.error}</p>`;
-        } else {
-            var infoHtml = `
-                <p><strong>Rows:</strong> ${data.rows}</p>
-                <p><strong>Columns:</strong> ${data.columns}</p>
-                <p><strong>Column Names:</strong> ${data.column_names.join(', ')}</p>
-            `;
-            document.getElementById('data-info-container').innerHTML = infoHtml;
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        document.getElementById('data-info-container').innerHTML = '<p class="error">An error occurred while loading data info.</p>';
-    });
-}
-
-// Handle loading data profiling info with data type selection
-document.getElementById('load-profile-btn').addEventListener('click', function () {
-    // Get the selected data type (original or cleaned)
-    var dataType = document.getElementById('data-select').value;
-
-    // Fetch the profile data based on the selected data type
-    fetch(`/profile?data_type=${dataType}`)
-    .then(response => response.json())
-    .then(data => {
-        if (data.error) {
-            document.getElementById('profiling-container').innerHTML = `<p class="error">${data.error}</p>`;
-        } else {
-            var profilingHtml = `
-                <h3>Basic Statistics:</h3>
-                ${data.describe}
-                <h3>Data Info:</h3>
-                <pre>${data.info}</pre>
-                <h3>Missing Values:</h3>
-                <ul>
-                    ${Object.keys(data.missing).map(key => `<li>${key}: ${data.missing[key]}</li>`).join('')}
-                </ul>
-            `;
-            document.getElementById('profiling-container').innerHTML = profilingHtml;
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        document.getElementById('profiling-container').innerHTML = '<p class="error">An error occurred while loading data profiling.</p>';
-    });
-});
-
-// Handle data cleaning form submission
-document.getElementById('clean-data-btn').addEventListener('click', function () {
-    // Get the selected cleaning operations (e.g., drop nulls, remove duplicates)
-    var dropNulls = document.getElementById('drop-nulls').checked;
-    var dropDuplicates = document.getElementById('drop-duplicates').checked;
-    var columnsToDrop = document.getElementById('columns-to-drop').value;
-
-    var cleaningOptions = {
-        drop_nulls: dropNulls,
-        drop_duplicates: dropDuplicates,
-        columns_to_drop: columnsToDrop.split(',').map(col => col.trim())
+// Handle data cleaning
+document.getElementById('clean-data-btn').addEventListener('click', async function() {
+    const options = {
+        drop_nulls: document.getElementById('drop-nulls').checked,
+        drop_duplicates: document.getElementById('drop-duplicates').checked
     };
 
-    // Send cleaning options to the backend
-    fetch('/clean-data', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(cleaningOptions),
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.message) {
-            document.getElementById('cleaning-status').innerHTML = `<p>${data.message}</p>`;
-            // Update the profiling dropdown menu with the new "Cleaned Data" option
-            var select = document.getElementById('data-select');
-            if (!select.querySelector('option[value="cleaned"]')) {
-                var option = document.createElement('option');
-                option.value = 'cleaned';
-                option.text = 'Cleaned Data';
-                select.add(option);
-            }
+    try {
+        const response = await fetch('/data/clean', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(options)
+        });
+
+        const data = await response.json();
+        if (data.error) {
+            showError(data.error);
         } else {
-            document.getElementById('cleaning-status').innerHTML = `<p class="error">${data.error}</p>`;
+            showSuccess('Data cleaned successfully');
+            updateDataInfo(data);
         }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        document.getElementById('cleaning-status').innerHTML = '<p class="error">An error occurred during cleaning.</p>';
-    });
+    } catch (error) {
+        showError('Error cleaning data');
+        console.error(error);
+    }
 });
+
+// Utility functions
+function showError(message) {
+    const resultsDiv = document.querySelector('.results');
+    resultsDiv.innerHTML = `<p class="error">${message}</p>`;
+}
+
+function showSuccess(message) {
+    const resultsDiv = document.querySelector('.results');
+    resultsDiv.innerHTML = `<p class="success">${message}</p>`;
+}
+
+function updateDataInfo(data) {
+    document.getElementById('data-info').innerHTML = `
+        <h3>Data Information</h3>
+        <p>Rows: ${data.shape[0]}</p>
+        <p>Columns: ${data.shape[1]}</p>
+        <p>Memory usage: ${data.memory_usage} bytes</p>
+    `;
+}
+
+function enableTabs() {
+    const tabs = document.querySelectorAll('.tab-button');
+    tabs.forEach(tab => tab.disabled = false);
+}
