@@ -1,19 +1,21 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Yugen Analysis</title>
+    <title>Yugen</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1>Yugen Analysis</h1>
+        <h1>Yugen</h1>
         
         <!-- Tab Navigation -->
         <div class="tab-nav">
             <button class="tab-button active" onclick="openTab(event, 'import')" id="defaultTab">Import</button>
-            <button class="tab-button" onclick="openTab(event, 'profile')">Profile</button>
-            <button class="tab-button" onclick="openTab(event, 'clean')">Clean</button>
-            <button class="tab-button" onclick="openTab(event, 'model')">Model</button>
+            <button class="tab-button" onclick="openTab(event, 'profile')">Profiling</button>
+            <button class="tab-button" onclick="openTab(event, 'visualize')">Visualizing</button>
+            <button class="tab-button" onclick="openTab(event, 'clean')">Cleaning</button>
+            <button class="tab-button" onclick="openTab(event, 'model')">Modeling</button>
         </div>
 
         <!-- Import Tab -->
@@ -35,6 +37,20 @@
             </div>
         </div>
 
+        <div id="visualize" class="tab-content">
+            <h2>Data Visualization</h2>
+            <div class="viz-controls">
+                <select id="plot-type">
+                    <option value="histogram">Histogram</option>
+                    <option value="scatter">Scatter Plot</option>
+                </select>
+                <select id="column-x"></select>
+                <select id="column-y" style="display:none"></select>
+                <button onclick="createVisualization()">Generate Plot</button>
+            </div>
+            <div id="plot-container"></div>
+        </div>
+        
         <!-- Clean Tab -->
         <div id="clean" class="tab-content">
             <h2>Data Cleaning</h2>

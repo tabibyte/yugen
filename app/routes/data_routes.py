@@ -33,6 +33,18 @@ def upload_file():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@bp.route('/data/visualize', methods=['POST'])
+def create_visualization():
+    try:
+        plot_type = request.json.get('type')
+        x = request.json.get('x')
+        y = request.json.get('y')
+        
+        result = data_service.get_plot_data(plot_type, x, y)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
 @bp.route('/data/clean', methods=['POST'])
 def clean_data():
     options = request.json

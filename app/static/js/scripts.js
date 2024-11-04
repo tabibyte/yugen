@@ -98,7 +98,7 @@ function updateDataInfo(data) {
             <h3>Data Information</h3>
             <div class="info-card">Rows: ${data.shape[0]}</div>
             <div class="info-card">Columns: ${data.shape[1]}</div>
-            <div class="info-card">Memory: ${formatBytes(data.memory_usage)}</div>
+            <div class="info-card">Size: ${formatBytes(data.memory_usage)}</div>
             <div class="missing-values">
                 ${Object.entries(data.missing)
                     .filter(([_, count]) => count > 0)
@@ -144,4 +144,54 @@ function formatBytes(bytes) {
 function enableTabs() {
     const tabs = document.querySelectorAll('.tab-button');
     tabs.forEach(tab => tab.disabled = false);
+}
+
+function updatePlotSelectors(data) {
+    const columns = data.columns;
+    populateColumnSelectors(columns);
+}
+
+function populateColumnSelectors(columns) {
+    const xSelect = document.getElementById('column-x');
+    const ySelect = document.getElementById('column-y');
+    
+    xSelect.innerHTML = columns.map(col => 
+        `<option value="${col}">${col}</option>`
+    ).join('');
+    ySelect.innerHTML = xSelect.innerHTML;
+}
+
+document.getElementById('plot-type').addEventListener('change', function() {
+    const ySelect = document.getElementById('column-y');
+    ySelect.style.display = this.value === 'scatter' ? 'inline-block' : 'none';
+});
+
+async function createVisualization() {
+    const plotType = document.getElementById('plot-type').value;
+    const columnX = document.getElementById('column-x').value;
+    const columnY = document.getElementById('column-y').value;
+    
+    try {
+        const response = await fetch('/data/visualize', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                type: plotType,
+                x: columnX,
+                y: plotType === 'scatter' ? columnY : null
+            })
+        });
+
+        const data = await response.json();
+        if (data.error) {
+            showError(data.error);
+        } else {
+            Plotly.newPlot('plot-container', data.data);
+        }
+    } catch (error) {
+        showError('Error creating visualization');
+        console.error(error);
+    }
 }

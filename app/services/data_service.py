@@ -72,6 +72,24 @@ class DataService:
             logger.error(f"Error generating profile: {str(e)}")
             raise DataProcessingError(f"Failed to generate profile: {str(e)}")
     
+    def get_plot_data(self, plot_type: str, x: str, y: str = None) -> Dict[str, Any]:
+        if self._df is None:
+            raise ValidationError("No data loaded")
+            
+        if plot_type == 'histogram':
+            data = {
+                'x': self._df[x].tolist(),
+                'type': 'histogram'
+            }
+        elif plot_type == 'scatter':
+            data = {
+                'x': self._df[x].tolist(),
+                'y': self._df[y].tolist(),
+                'mode': 'markers',
+                'type': 'scatter'
+            }
+        return {'data': [data]}
+    
     def clean_data(self, options: Dict[str, bool]) -> Dict[str, Any]:
         """Clean data based on provided options"""
         if self._df is None:
