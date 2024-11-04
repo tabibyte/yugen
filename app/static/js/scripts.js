@@ -30,7 +30,7 @@ document.getElementById('upload-form').addEventListener('submit', async function
 
     try {
         const formData = new FormData();
-        formData.append('file_path', file.path);
+        formData.append('file', file);  // Change from file_path to file
 
         const response = await fetch('/data/upload', {
             method: 'POST',
@@ -38,7 +38,6 @@ document.getElementById('upload-form').addEventListener('submit', async function
         });
 
         const data = await response.json();
-        
         if (data.error) {
             showError(data.error);
         } else {
@@ -93,11 +92,35 @@ function showSuccess(message) {
 }
 
 function updateDataInfo(data) {
-    document.getElementById('data-info').innerHTML = `
-        <h3>Data Information</h3>
-        <p>Rows: ${data.shape[0]}</p>
-        <p>Columns: ${data.shape[1]}</p>
-        <p>Memory usage: ${data.memory_usage} bytes</p>
+    const importResults = document.getElementById('import-results');
+    importResults.innerHTML = `
+        <div class="data-info">
+            <h3>Data Information</h3>
+            <p>Rows: ${data.shape[0]}</p>
+            <p>Columns: ${data.shape[1]}</p>
+            <p>Memory usage: ${data.memory_usage} bytes</p>
+            <h4>Missing Values</h4>
+            ${Object.entries(data.missing).map(([col, count]) => 
+                `<p>${col}: ${count}</p>`
+            ).join('')}
+        </div>
+        <div class="data-preview">
+            <h3>Data Preview</h3>
+            <table>
+                <thead>
+                    <tr>${data.columns.map(col => 
+                        `<th>${col}</th>`
+                    ).join('')}</tr>
+                </thead>
+                <tbody>
+                    ${data.preview.map(row => 
+                        `<tr>${data.columns.map(col => 
+                            `<td>${row[col] ?? ''}</td>`
+                        ).join('')}</tr>`
+                    ).join('')}
+                </tbody>
+            </table>
+        </div>
     `;
 }
 

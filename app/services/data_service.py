@@ -17,29 +17,37 @@ class DataService:
         """Process uploaded file and return data info"""
         logger.info(f"Processing file: {file_path}")
         
-        # File existence check - don't wrap in try-except
-        if not file_path.exists():
-            logger.error(f"File not found: {file_path}")
-            raise ValidationError(f"File not found: {file_path}")
-        
         try:
-            # File type check - don't wrap in try-except
-            if file_path.suffix not in ['.csv', '.xlsx']:
+            if not file_path.exists():
+                logger.error(f"File not found: {file_path}")
+                raise ValidationError(f"File not found: {file_path}")
+
+            if file_path.suffix == '.csv':
+                logger.info("Reading CSV file")
+                self._df = pd.read_csv(file_path, encoding='utf-8')
+            elif file_path.suffix == '.xlsx':
+                logger.info("Reading Excel file")
+                self._df = pd.read_excel(file_path)
+            else:
                 logger.error(f"Unsupported file type: {file_path.suffix}")
                 raise ValidationError(f"Unsupported file type: {file_path.suffix}")
                 
-            # Process file
-            if file_path.suffix == '.csv':
-                self._df = pd.read_csv(file_path)
-            else:
-                self._df = pd.read_excel(file_path)
-                
             self._original_df = self._df.copy()
-            logger.info("File processed successfully")
+            logger.info(f"File processed successfully. Shape: {self._df.shape}")
+            
+            # Clean up temp file
+            file_path.unlink(missing_ok=True)
+            
             return self._get_data_info()
             
+        except pd.errors.EmptyDataError:
+            logger.error("Empty file detected")
+            raise ValidationError("File is empty")
+        except pd.errors.ParserError as e:
+            logger.error(f"Parser error: {str(e)}")
+            raise ValidationError(f"Failed to parse file: {str(e)}")
         except Exception as e:
-            logger.error(f"Error processing file: {str(e)}")
+            logger.error(f"Unexpected error: {str(e)}")
             raise DataProcessingError(f"Failed to process file: {str(e)}")
     
     def get_profile(self) -> Dict[str, Any]:
@@ -102,13 +110,14 @@ class DataService:
             raise DataProcessingError(f"Failed to reset data: {str(e)}")
     
     def _get_data_info(self) -> Dict[str, Any]:
-        """Get basic data information"""
         return {
-            'shape': self._df.shape,
+            'shape': tuple(map(int, self._df.shape)),
             'columns': self._df.columns.tolist(),
-            'memory_usage': self._df.memory_usage().sum(),
-            'dtypes': self._df.dtypes.astype(str).to_dict(),
-            'transformations': self._transformation_history
+            'memory_usage': int(self._df.memory_usage().sum()),
+            'dtypes': {k: str(v) for k, v in self._df.dtypes.items()},
+            'transformations': self._transformation_history,
+            'preview': self._df.head().to_dict('records'),  # Add preview
+            'missing': self._df.isnull().sum().to_dict()  # Add missing values info
         }
     
     def _get_numeric_summary(self) -> Dict[str, Dict[str, float]]:
