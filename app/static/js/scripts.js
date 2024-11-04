@@ -96,13 +96,19 @@ function updateDataInfo(data) {
     importResults.innerHTML = `
         <div class="data-info">
             <h3>Data Information</h3>
-            <p>Rows: ${data.shape[0]}</p>
-            <p>Columns: ${data.shape[1]}</p>
-            <p>Memory usage: ${data.memory_usage} bytes</p>
-            <h4>Missing Values</h4>
-            ${Object.entries(data.missing).map(([col, count]) => 
-                `<p>${col}: ${count}</p>`
-            ).join('')}
+            <div class="info-card">Rows: ${data.shape[0]}</div>
+            <div class="info-card">Columns: ${data.shape[1]}</div>
+            <div class="info-card">Memory: ${formatBytes(data.memory_usage)}</div>
+            <div class="missing-values">
+                ${Object.entries(data.missing)
+                    .filter(([_, count]) => count > 0)
+                    .map(([col, count]) => 
+                        `<div class="missing-value-item">
+                            <span>${col}</span>
+                            <span>${count}</span>
+                         </div>`
+                    ).join('')}
+            </div>
         </div>
         <div class="data-preview">
             <h3>Data Preview</h3>
@@ -122,6 +128,17 @@ function updateDataInfo(data) {
             </table>
         </div>
     `;
+}
+
+function formatBytes(bytes) {
+    if (bytes < 1024) return bytes + " B";
+    const units = ['KB', 'MB', 'GB'];
+    let i = -1;
+    do {
+        bytes /= 1024;
+        i++;
+    } while (bytes >= 1024 && i < units.length - 1);
+    return bytes.toFixed(1) + ' ' + units[i];
 }
 
 function enableTabs() {
