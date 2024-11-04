@@ -1,4 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+*.egg-info/
+*.egg
 
+# Environment
+.env
+.venv
+env/
+venv/
+
+# IDE
+.vscode/
+.idea/
+
+# Project specific
+instance/*
+!instance/.gitignore
+logs/*
+!logs/.gitignore
+
+# Data
 *.csv
-*.pyc
-/yugen/utils/__pycache__
+*.xlsx
