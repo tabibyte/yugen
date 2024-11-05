@@ -41,11 +41,36 @@
         <!-- Profile Tab -->
         <div id="profile" class="tab-content">
             <h2>Data Profile</h2>
-            <div id="profile-results" class="results">
-                <div id="data-info"></div>
-                <div id="data-preview"></div>
+            <div class="profile-container">
+                <div class="profile-top">
+                    <div class="data-types-summary">
+                        <h3>Data Types</h3>
+                        <div id="dtypes-stats"></div>
+                    </div>
+                    <div class="missing-data-summary">
+                        <h3>Missing Data</h3>
+                        <div id="missing-stats"></div>
+                    </div>
+                </div>
+                <div class="profile-stats">
+                    <div class="numeric-summary">
+                        <h3>Numeric Summary</h3>
+                        <div class="stats-table-container">
+                            <div id="numeric-stats"></div>
+                        </div>
+                    </div>
+                    <div class="categorical-summary">
+                        <h3>Categorical Summary</h3>
+                        <div class="stats-table-container">
+                            <div id="categorical-stats"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="correlation-matrix">
+                    <h3>Correlation Matrix</h3>
+                    <div id="correlation-plot"></div>
+                </div>
             </div>
-        </div>
 
         <div id="visualize" class="tab-content">
             <h2>Data Visualization</h2>

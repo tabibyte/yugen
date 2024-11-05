@@ -44,6 +44,7 @@ document.getElementById('upload-form').addEventListener('submit', async function
         } else {
             showSuccess('File processed successfully');
             updateDataInfo(data);
+            updateProfileData();
             enableTabs();
         }
     } catch (error) {
@@ -101,6 +102,13 @@ function showSuccess(message) {
     resultsDiv.innerHTML = `<p class="success">${message}</p>`;
 }
 
+function updateProfile(data) {
+    updateDatatypesSummary(data.dtypes);
+    updateMissingData(data.missing);
+    updateNumericStats(data.numeric_summary);
+    createCorrelationMatrix(data.correlation);
+}
+
 function updateDataInfo(data) {
     const infoCards = document.querySelector('.info-cards');
     infoCards.innerHTML = `
@@ -119,6 +127,81 @@ function updateDataInfo(data) {
         </div>
     `;
 
+    fetch('/data/profile')
+        .then(response => response.json())
+        .then(profileData => {
+            if (!profileData.error) {
+                updateDatatypesSummary(profileData.dtypes);
+                updateMissingData(profileData.missing);
+                if (profileData.numeric_summary) {
+                    const numericStats = document.getElementById('numeric-stats');
+                    numericStats.innerHTML = createNumericTable(profileData.numeric_summary);
+                }
+                if (profileData.categorical_summary) {
+                    const categoricalStats = document.getElementById('categorical-stats');
+                    categoricalStats.innerHTML = createCategoricalTable(profileData.categorical_summary);
+                }
+                if (profileData.correlation) {
+                    createCorrelationMatrix(profileData.correlation);
+                }
+            }
+        })
+        .catch(error => console.error('Error updating profile:', error));
+
+    const numericStats = document.getElementById('numeric-stats');
+    if (numericStats) {
+        numericStats.innerHTML = `
+            <table class="stats-table">
+                <thead>
+                    <tr>
+                        <th>Column</th>
+                        <th>Mean</th>
+                        <th>Std</th>
+                        <th>Min</th>
+                        <th>Max</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${Object.entries(data.numeric_summary || {}).map(([col, stats]) => `
+                        <tr>
+                            <td>${col}</td>
+                            <td>${stats.mean.toFixed(2)}</td>
+                            <td>${stats.std.toFixed(2)}</td>
+                            <td>${stats.min}</td>
+                            <td>${stats.max}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    const categoricalStats = document.getElementById('categorical-stats');
+    if (categoricalStats) {
+        categoricalStats.innerHTML = `
+            <table class="stats-table">
+                <thead>
+                    <tr>
+                        <th>Column</th>
+                        <th>Value</th>
+                        <th>Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${Object.entries(data.categorical_summary || {}).map(([col, values]) => 
+                        Object.entries(values).map(([val, count]) => `
+                            <tr>
+                                <td>${col}</td>
+                                <td>${val}</td>
+                                <td>${count}</td>
+                            </tr>
+                        `).join('')
+                    ).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+    
     const dataPreview = document.querySelector('.data-preview');
     dataPreview.innerHTML = `
         <h3>Data Preview</h3>
@@ -149,6 +232,85 @@ function formatBytes(bytes) {
     } while (bytes >= 1024 && i < units.length - 1);
     return bytes.toFixed(1) + ' ' + units[i];
 }
+
+
+async function updateProfileData() {
+    try {
+        const response = await fetch('/data/profile');
+        const data = await response.json();
+        
+        if (data.error) {
+            showError(data.error);
+            return;
+        }
+
+        const numericStats = document.getElementById('numeric-stats');
+        const categoricalStats = document.getElementById('categorical-stats');
+
+        if (data.numeric_summary) {
+            numericStats.innerHTML = createNumericTable(data.numeric_summary);
+        }
+
+        if (data.categorical_summary) {
+            categoricalStats.innerHTML = createCategoricalTable(data.categorical_summary);
+        }
+    } catch (error) {
+        console.error('Error fetching profile:', error);
+    }
+}
+
+function createNumericTable(summary) {
+    return `
+        <table class="stats-table">
+            <thead>
+                <tr>
+                    <th>Column</th>
+                    <th>Mean</th>
+                    <th>Std</th>
+                    <th>Min</th>
+                    <th>Max</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${Object.entries(summary).map(([col, stats]) => `
+                    <tr>
+                        <td>${col}</td>
+                        <td>${Number(stats.mean).toFixed(2)}</td>
+                        <td>${Number(stats.std).toFixed(2)}</td>
+                        <td>${stats.min}</td>
+                        <td>${stats.max}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+function createCategoricalTable(summary) {
+    return `
+        <table class="stats-table">
+            <thead>
+                <tr>
+                    <th>Column</th>
+                    <th>Value</th>
+                    <th>Count</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${Object.entries(summary).map(([col, values]) => 
+                    Object.entries(values).map(([val, count]) => `
+                        <tr>
+                            <td>${col}</td>
+                            <td>${val}</td>
+                            <td>${count}</td>
+                        </tr>
+                    `).join('')
+                ).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
 
 function enableTabs() {
     const tabs = document.querySelectorAll('.tab-button');
@@ -203,4 +365,59 @@ async function createVisualization() {
         showError('Error creating visualization');
         console.error(error);
     }
+}
+
+function updateDatatypesSummary(dtypes) {
+    const dtypesStats = document.getElementById('dtypes-stats');
+    dtypesStats.innerHTML = `
+        <div class="dtype-pie" id="dtype-chart"></div>
+        <div class="dtype-details">
+            ${Object.entries(dtypes.details).map(([col, type]) => 
+                `<div class="dtype-item">
+                    <span>${col}</span>
+                    <span>${type}</span>
+                </div>`
+            ).join('')}
+        </div>
+    `;
+    
+    Plotly.newPlot('dtype-chart', [{
+        values: [dtypes.numeric, dtypes.categorical],
+        labels: ['Numeric', 'Categorical'],
+        type: 'pie'
+    }], {
+        height: 150,
+        margin: {t: 0, b: 0, l: 0, r: 0}
+    });
+}
+
+function createCorrelationMatrix(correlation) {
+    const data = [{
+        type: 'heatmap',
+        z: Object.values(correlation).map(row => Object.values(row)),
+        x: Object.keys(correlation),
+        y: Object.keys(correlation),
+        colorscale: 'RdBu'
+    }];
+    
+    Plotly.newPlot('correlation-plot', data, {
+        margin: {t: 25, b: 25, l: 25, r: 25}
+    });
+}
+
+function updateMissingData(missing) {
+    const missingStats = document.getElementById('missing-stats');
+    missingStats.innerHTML = `
+        <div class="missing-overview">
+            <p>Total Missing: ${missing.total}</p>
+        </div>
+        <div class="missing-details">
+            ${Object.entries(missing.by_column).map(([col, count]) => `
+                <div class="missing-item">
+                    <span>${col}</span>
+                    <span>${count} (${missing.percentage[col]}%)</span>
+                </div>
+            `).join('')}
+        </div>
+    `;
 }

@@ -33,6 +33,14 @@ def upload_file():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@bp.route('/data/profile', methods=['GET'])
+def get_profile():
+    try:
+        result = data_service.get_profile()
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
 @bp.route('/data/visualize', methods=['POST'])
 def create_visualization():
     try:
