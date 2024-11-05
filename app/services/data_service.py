@@ -51,26 +51,48 @@ class DataService:
             raise DataProcessingError(f"Failed to process file: {str(e)}")
     
     def get_profile(self) -> Dict[str, Any]:
-        """Get data profile information"""
         if self._df is None:
             raise ValidationError("No data loaded")
             
         try:
-            logger.info("Generating data profile")
-            profile = {
-                'info': self._get_data_info(),
-                'preview': self._df.head().to_dict('records'),
-                'missing': self._df.isnull().sum().to_dict(),
-                'dtypes': self._df.dtypes.astype(str).to_dict(),
-                'numeric_summary': self._get_numeric_summary(),
-                'categorical_summary': self._get_categorical_summary()
-            }
-            logger.info("Profile generated successfully")
-            return profile
+            numeric_cols = self._df.select_dtypes(include=['int64', 'float64']).columns
+            categorical_cols = self._df.select_dtypes(include=['object', 'category']).columns
             
+            return {
+                'dtypes': {
+                    'numeric': len(numeric_cols),
+                    'categorical': len(categorical_cols),
+                    'details': self._df.dtypes.astype(str).to_dict()
+                },
+                'missing': {
+                    'total': int(self._df.isnull().sum().sum()),
+                    'by_column': self._df.isnull().sum().to_dict(),
+                    'percentage': (self._df.isnull().sum() / len(self._df) * 100).round(2).to_dict()
+                },
+                'numeric_summary': self._get_numeric_summary(),
+                'categorical_summary': self._get_categorical_summary(),
+                'correlation': self._df[numeric_cols].corr().to_dict() if len(numeric_cols) > 0 else {}
+            }
         except Exception as e:
-            logger.error(f"Error generating profile: {str(e)}")
             raise DataProcessingError(f"Failed to generate profile: {str(e)}")
+    
+    def get_plot_data(self, plot_type: str, x: str, y: str = None) -> Dict[str, Any]:
+        if self._df is None:
+            raise ValidationError("No data loaded")
+            
+        if plot_type == 'histogram':
+            data = {
+                'x': self._df[x].tolist(),
+                'type': 'histogram'
+            }
+        elif plot_type == 'scatter':
+            data = {
+                'x': self._df[x].tolist(),
+                'y': self._df[y].tolist(),
+                'mode': 'markers',
+                'type': 'scatter'
+            }
+        return {'data': [data]}
     
     def clean_data(self, options: Dict[str, bool]) -> Dict[str, Any]:
         """Clean data based on provided options"""
