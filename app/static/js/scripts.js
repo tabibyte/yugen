@@ -20,6 +20,7 @@ document.getElementById("defaultTab").click();
 // Handle file upload
 document.getElementById('upload-form').addEventListener('submit', async function(e) {
     e.preventDefault();
+    clearError();
     const fileInput = document.getElementById('file-input');
     const file = fileInput.files[0];
     
@@ -82,8 +83,17 @@ document.getElementById('clean-data-btn').addEventListener('click', async functi
 
 // Utility functions
 function showError(message) {
-    const resultsDiv = document.querySelector('.results');
-    resultsDiv.innerHTML = `<p class="error">${message}</p>`;
+    const errorDiv = document.getElementById('import-error');
+    if (errorDiv) {
+        errorDiv.textContent = message;
+    }
+}
+
+function clearError() {
+    const errorDiv = document.getElementById('import-error');
+    if (errorDiv) {
+        errorDiv.textContent = '';
+    }
 }
 
 function showSuccess(message) {
@@ -92,41 +102,40 @@ function showSuccess(message) {
 }
 
 function updateDataInfo(data) {
-    const importResults = document.getElementById('import-results');
-    importResults.innerHTML = `
-        <div class="data-info">
-            <h3>Data Information</h3>
-            <div class="info-card">Rows: ${data.shape[0]}</div>
-            <div class="info-card">Columns: ${data.shape[1]}</div>
-            <div class="info-card">Size: ${formatBytes(data.memory_usage)}</div>
-            <div class="missing-values">
-                ${Object.entries(data.missing)
-                    .filter(([_, count]) => count > 0)
-                    .map(([col, count]) => 
-                        `<div class="missing-value-item">
-                            <span>${col}</span>
-                            <span>${count}</span>
-                         </div>`
-                    ).join('')}
-            </div>
+    const infoCards = document.querySelector('.info-cards');
+    infoCards.innerHTML = `
+        <h3>Data Information</h3>
+        <div class="info-card">
+            <span>Rows:</span>
+            <span>${data.shape[0]}</span>
         </div>
-        <div class="data-preview">
-            <h3>Data Preview</h3>
-            <table>
-                <thead>
-                    <tr>${data.columns.map(col => 
-                        `<th>${col}</th>`
-                    ).join('')}</tr>
-                </thead>
-                <tbody>
-                    ${data.preview.map(row => 
-                        `<tr>${data.columns.map(col => 
-                            `<td>${row[col] ?? ''}</td>`
-                        ).join('')}</tr>`
-                    ).join('')}
-                </tbody>
-            </table>
+        <div class="info-card">
+            <span>Columns:</span>
+            <span>${data.shape[1]}</span>
         </div>
+        <div class="info-card">
+            <span>Size:</span>
+            <span>${formatBytes(data.memory_usage)}</span>
+        </div>
+    `;
+
+    const dataPreview = document.querySelector('.data-preview');
+    dataPreview.innerHTML = `
+        <h3>Data Preview</h3>
+        <table>
+            <thead>
+                <tr>${data.columns.map(col => 
+                    `<th>${col}</th>`
+                ).join('')}</tr>
+            </thead>
+            <tbody>
+                ${data.preview.map(row => 
+                    `<tr>${data.columns.map(col => 
+                        `<td>${row[col] ?? ''}</td>`
+                    ).join('')}</tr>`
+                ).join('')}
+            </tbody>
+        </table>
     `;
 }
 
