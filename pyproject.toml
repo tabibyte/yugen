@@ -26,8 +26,8 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = [
-    "E",  # pycodestyle
-    "F",  # pyflakes
-    "I",  # isort
-    "B",  # flake8-bugbear
+    "E",
+    "F",
+    "I",
+    "B",
 ]

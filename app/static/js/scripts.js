@@ -252,7 +252,23 @@ async function updateProfileData() {
         }
 
         if (data.categorical_summary) {
-            categoricalStats.innerHTML = createCategoricalTable(data.categorical_summary);
+            // Store global state
+            window.currentCategoricalSummary = data.categorical_summary;
+            
+            // Update select options
+            const select = document.getElementById('category-select');
+            const columns = Object.keys(data.categorical_summary);
+            
+            select.innerHTML = `
+                <option value="all">All Columns</option>
+                ${columns.map(col => 
+                    `<option value="${col}">${col}</option>`
+                ).join('')}
+            `;
+            
+            // Update table
+            const categoricalStats = document.getElementById('categorical-stats');
+            categoricalStats.innerHTML = createCategoricalTable(data.categorical_summary, 'all');
         }
     } catch (error) {
         console.error('Error fetching profile:', error);
@@ -311,6 +327,69 @@ function createCategoricalTable(summary) {
     `;
 }
 
+function updateCategorySelect(summary) {
+    window.currentCategoricalSummary = summary;
+
+    const select = document.getElementById('category-select');
+    const columns = Object.keys(summary);
+    
+    select.innerHTML = `
+        <option value="all">All Columns</option>
+        ${columns.map(col => 
+            `<option value="${col}">${col}</option>`
+        ).join('')}
+    `;
+
+    const categoricalStats = document.getElementById('categorical-stats');
+    categoricalStats.innerHTML = createCategoricalTable(summary, 'all');
+}
+
+function createCategoricalTable(summary, selectedColumn = 'all') {
+    const filteredSummary = selectedColumn === 'all' ? 
+        summary : 
+        {[selectedColumn]: summary[selectedColumn]};
+        
+    return `
+        <table class="stats-table">
+            <thead>
+                <tr>
+                    <th>Column</th>
+                    <th>Value</th>
+                    <th>Count</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${Object.entries(filteredSummary).map(([col, values]) => 
+                    Object.entries(values).map(([val, count]) => `
+                        <tr>
+                            <td>${col}</td>
+                            <td>${val}</td>
+                            <td>${count}</td>
+                        </tr>
+                    `).join('')
+                ).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+// Add event listener
+document.getElementById('category-select')?.addEventListener('change', function() {
+    if (!window.currentCategoricalSummary) return;
+    
+    const categoricalStats = document.getElementById('categorical-stats');
+    categoricalStats.innerHTML = createCategoricalTable(
+        window.currentCategoricalSummary, 
+        this.value
+    );
+});
+
+// Update updateProfileData function
+if (data.categorical_summary) {
+    window.currentCategoricalSummary = data.categorical_summary;
+    updateCategorySelect(data.categorical_summary);
+    categoricalStats.innerHTML = createCategoricalTable(data.categorical_summary);
+}
 
 function enableTabs() {
     const tabs = document.querySelectorAll('.tab-button');
@@ -370,7 +449,16 @@ async function createVisualization() {
 function updateDatatypesSummary(dtypes) {
     const dtypesStats = document.getElementById('dtypes-stats');
     dtypesStats.innerHTML = `
-        <div class="dtype-pie" id="dtype-chart"></div>
+        <div class="dtype-summary">
+            <div class="dtype-count">
+                <span>Numeric Columns:</span>
+                <span>${dtypes.numeric}</span>
+            </div>
+            <div class="dtype-count">
+                <span>Categorical Columns:</span>
+                <span>${dtypes.categorical}</span>
+            </div>
+        </div>
         <div class="dtype-details">
             ${Object.entries(dtypes.details).map(([col, type]) => 
                 `<div class="dtype-item">
@@ -380,28 +468,76 @@ function updateDatatypesSummary(dtypes) {
             ).join('')}
         </div>
     `;
-    
-    Plotly.newPlot('dtype-chart', [{
-        values: [dtypes.numeric, dtypes.categorical],
-        labels: ['Numeric', 'Categorical'],
-        type: 'pie'
-    }], {
-        height: 150,
-        margin: {t: 0, b: 0, l: 0, r: 0}
-    });
 }
 
 function createCorrelationMatrix(correlation) {
+    // Get container dimensions
+    const container = document.getElementById('correlation-plot');
+    const containerWidth = container.offsetWidth;
+    
     const data = [{
         type: 'heatmap',
         z: Object.values(correlation).map(row => Object.values(row)),
         x: Object.keys(correlation),
         y: Object.keys(correlation),
-        colorscale: 'RdBu'
+        colorscale: [
+            [0, '#ffffff'],  // Start with white
+            [0.25, '#d9d9d9'],
+            [0.5, '#a6a6a6'],
+            [0.75, '#737373'],
+            [1, '#1e1e1e']  // End with dark gray
+        ],
+        zmin: -1,
+        zmax: 1,
+        hoverongaps: false,
+        hoverlabel: {
+            bgcolor: '#1e1e1e',
+            bordercolor: '#1e1e1e',
+            font: { 
+                family: 'JetBrains Mono',
+                size: 12,
+                color: 'white' 
+            }
+        },
+        hovertemplate: 
+            '<b>%{x}</b> × <b>%{y}</b><br>' +
+            'Correlation: %{z:.2f}<extra></extra>'
     }];
     
-    Plotly.newPlot('correlation-plot', data, {
-        margin: {t: 25, b: 25, l: 25, r: 25}
+    const layout = {
+        width: containerWidth,
+        height: containerWidth,  // Keep it square
+        margin: {
+            l: 80,  // Increased left margin
+            r: 20,
+            t: 20,
+            b: 60
+        },
+        xaxis: {
+            tickfont: { size: 12, family: 'JetBrains Mono' },
+            tickangle: 45
+        },
+        yaxis: {
+            tickfont: { size: 12, family: 'JetBrains Mono' }
+        },
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)'
+    };
+
+    const config = {
+        displayModeBar: false,
+        responsive: true
+    };
+
+    Plotly.newPlot('correlation-plot', data, layout, config);
+
+    // Update on window resize
+    window.addEventListener('resize', () => {
+        const newWidth = container.offsetWidth;
+        Plotly.relayout('correlation-plot', {
+            width: newWidth,
+            height: newWidth
+        });
     });
 }
 
