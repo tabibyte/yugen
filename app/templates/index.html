@@ -40,7 +40,6 @@
 
         <!-- Profile Tab -->
         <div id="profile" class="tab-content">
-            <h2>Data Profile</h2>
             <div class="profile-container">
                 <div class="profile-top">
                     <div class="data-types-summary">
@@ -61,6 +60,11 @@
                     </div>
                     <div class="categorical-summary">
                         <h3>Categorical Summary</h3>
+                        <div class="category-filter">
+                            <select id="category-select">
+                                <option value="all">All Columns</option>
+                            </select>
+                        </div>
                         <div class="stats-table-container">
                             <div id="categorical-stats"></div>
                         </div>
