@@ -50,31 +50,37 @@ class DataService:
             logger.error(f"Unexpected error: {str(e)}")
             raise DataProcessingError(f"Failed to process file: {str(e)}")
     
-    def get_profile(self) -> Dict[str, Any]:
-        if self._df is None:
+    def get_profile(self, profile_type: str = 'cleaned') -> Dict[str, Any]:
+        if profile_type == 'original':
+            df = self._original_df
+        else:
+            df = self._df
+
+        if df is None:
             raise ValidationError("No data loaded")
             
         try:
-            numeric_cols = self._df.select_dtypes(include=['int64', 'float64']).columns
-            categorical_cols = self._df.select_dtypes(include=['object', 'category']).columns
+            numeric_cols = df.select_dtypes(include=['int64', 'float64']).columns
+            categorical_cols = df.select_dtypes(include=['object', 'category']).columns
             
             return {
                 'dtypes': {
                     'numeric': len(numeric_cols),
                     'categorical': len(categorical_cols),
-                    'details': self._df.dtypes.astype(str).to_dict()
+                    'details': df.dtypes.astype(str).to_dict()
                 },
                 'missing': {
-                    'total': int(self._df.isnull().sum().sum()),
-                    'by_column': self._df.isnull().sum().to_dict(),
-                    'percentage': (self._df.isnull().sum() / len(self._df) * 100).round(2).to_dict()
+                    'total': int(df.isnull().sum().sum()),
+                    'by_column': df.isnull().sum().to_dict(),
+                    'percentage': (df.isnull().sum() / len(df) * 100).round(2).to_dict()
                 },
-                'numeric_summary': self._get_numeric_summary(),
-                'categorical_summary': self._get_categorical_summary(),
-                'correlation': self._df[numeric_cols].corr().to_dict() if len(numeric_cols) > 0 else {}
+                'numeric_summary': self._get_numeric_summary(df),
+                'categorical_summary': self._get_categorical_summary(df),
+                'correlation': df[numeric_cols].corr().to_dict() if len(numeric_cols) > 0 else {}
             }
         except Exception as e:
             raise DataProcessingError(f"Failed to generate profile: {str(e)}")
+
     
     def get_plot_data(self, plot_type: str, x: str, y: str = None) -> Dict[str, Any]:
         if self._df is None:
@@ -142,7 +148,7 @@ class DataService:
             'missing': self._df.isnull().sum().to_dict()  # Add missing values info
         }
     
-    def _get_numeric_summary(self) -> Dict[str, Dict[str, float]]:
+    def _get_numeric_summary(self, df) -> Dict[str, Dict[str, float]]:
         """Get summary statistics for numeric columns"""
         numeric_cols = self._df.select_dtypes(include=['int64', 'float64']).columns
         return {
@@ -154,7 +160,7 @@ class DataService:
             } for col in numeric_cols
         }
     
-    def _get_categorical_summary(self) -> Dict[str, Dict[str, int]]:
+    def _get_categorical_summary(self, df) -> Dict[str, Dict[str, int]]:
         """Get summary statistics for categorical columns"""
         categorical_cols = self._df.select_dtypes(include=['object', 'category']).columns
         return {

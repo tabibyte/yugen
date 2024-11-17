@@ -28,7 +28,7 @@
                             <input type="file" id="file-input" accept=".csv,.xlsx">
                             <button type="submit">Process</button>
                         </form>
-                        <div id="import-error" class="error-message"></div>
+                        <div id="import-success" class="success-message" style="display: none;"></div>
                     </div>
                     <div class="import-info">
                         <div class="info-cards"></div>
@@ -40,6 +40,13 @@
 
         <!-- Profile Tab -->
         <div id="profile" class="tab-content">
+            <div class="profile-options">
+                <label for="profile-select">Profile Data:</label>
+                <select id="profile-select">
+                    <option value="cleaned">Cleaned Data</option>
+                    <option value="original">Original Data</option>
+                </select>
+            </div>
             <div class="profile-container">
                 <div class="profile-top">
                     <div class="data-types-summary">
@@ -75,19 +82,39 @@
                     <div id="correlation-plot"></div>
                 </div>
             </div>
-
+        </div>
+           
+        <!-- Visualize Tab --> 
         <div id="visualize" class="tab-content">
             <h2>Data Visualization</h2>
-            <div class="viz-controls">
-                <select id="plot-type">
-                    <option value="histogram">Histogram</option>
-                    <option value="scatter">Scatter Plot</option>
-                </select>
-                <select id="column-x"></select>
-                <select id="column-y" style="display:none"></select>
-                <button onclick="createVisualization()">Generate Plot</button>
+            <div class="visualize-options">
+                <div class="plot-options">
+                    <label>
+                        <input type="radio" name="plot-type" value="scatter" checked> Scatter Plot
+                    </label>
+                    <label>
+                        <input type="radio" name="plot-type" value="line"> Line Plot
+                    </label>
+                    <label>
+                        <input type="radio" name="plot-type" value="bar"> Bar Plot
+                    </label>
+                    <label>
+                        <input type="radio" name="plot-type" value="hist"> Histogram
+                    </label>
+                </div>
+                <div class="plot-features">
+                    <div class="plot-x">
+                        <label>X-axis</label>
+                        <select id="x-select"></select>
+                    </div>
+                    <div class="plot-y">
+                        <label>Y-axis</label>
+                        <select id="y-select"></select>
+                    </div>
+                    <button id="plot-data-btn">Plot Data</button>
+                </div>
             </div>
-            <div id="plot-container"></div>
+            <div id="plot-results" class="results"></div>
         </div>
         
         <!-- Clean Tab -->

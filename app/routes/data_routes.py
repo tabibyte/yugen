@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request, render_template
 from app.services.data_service import DataService
 from pathlib import Path
 from werkzeug.utils import secure_filename
+from app.utils.exceptions import ValidationError, DataProcessingError
 import os
 
 bp = Blueprint('data', __name__, url_prefix='/')
@@ -22,7 +23,7 @@ def upload_file():
         
     if not file.filename.endswith(('.csv', '.xlsx')):
         return jsonify({'error': 'Invalid file type'}), 400
-        
+
     try:
         filename = secure_filename(file.filename)
         temp_path = os.path.join('instance', filename)
@@ -33,12 +34,15 @@ def upload_file():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@bp.route('/data/profile', methods=['GET'])
-def get_profile():
+@bp.route('/data/profile')
+def data_profile():
+    profile_type = request.args.get('type', 'cleaned')
     try:
-        result = data_service.get_profile()
-        return jsonify(result)
-    except Exception as e:
+        profile = data_service.get_profile(profile_type)
+        return jsonify(profile)
+    except ValidationError as e:
+        return jsonify({'error': str(e)}), 400
+    except DataProcessingError as e:
         return jsonify({'error': str(e)}), 500
     
 @bp.route('/data/visualize', methods=['POST'])

@@ -317,3 +317,31 @@ input[type="file"] {
     outline: none;
     border-color: #1e1e1e;
 }
+
+.profile-options {
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.profile-options label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.profile-options select {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    padding: 6px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+    min-width: 200px;
+}
+
+.profile-options select:focus {
+    outline: none;
+    border-color: #1e1e1e;
+}

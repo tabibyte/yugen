@@ -18,21 +18,20 @@ function openTab(evt, tabName) {
 document.getElementById("defaultTab").click();
 
 // Handle file upload
-document.getElementById('upload-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    clearError();
+document.getElementById('upload-form').addEventListener('submit', async function(event) {
+    event.preventDefault();
+    
     const fileInput = document.getElementById('file-input');
     const file = fileInput.files[0];
-    
     if (!file) {
-        showError('Please select a file');
+        showError('No file selected');
         return;
     }
 
-    try {
-        const formData = new FormData();
-        formData.append('file', file);  // Change from file_path to file
+    const formData = new FormData();
+    formData.append('file', file);
 
+    try {
         const response = await fetch('/data/upload', {
             method: 'POST',
             body: formData
@@ -44,8 +43,6 @@ document.getElementById('upload-form').addEventListener('submit', async function
         } else {
             showSuccess('File processed successfully');
             updateDataInfo(data);
-            updateProfileData();
-            enableTabs();
         }
     } catch (error) {
         showError('Error processing file');
@@ -87,8 +84,12 @@ function showError(message) {
     const errorDiv = document.getElementById('import-error');
     if (errorDiv) {
         errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+    } else {
+        console.error('Error div not found');
     }
 }
+
 
 function clearError() {
     const errorDiv = document.getElementById('import-error');
@@ -98,8 +99,13 @@ function clearError() {
 }
 
 function showSuccess(message) {
-    const resultsDiv = document.querySelector('.results');
-    resultsDiv.innerHTML = `<p class="success">${message}</p>`;
+    const successDiv = document.getElementById('import-success');
+    if (successDiv) {
+        successDiv.textContent = message;
+        successDiv.style.display = 'block';
+    } else {
+        console.error('Success div not found');
+    }
 }
 
 function updateProfile(data) {
@@ -126,6 +132,11 @@ function updateDataInfo(data) {
             <span>${formatBytes(data.memory_usage)}</span>
         </div>
     `;
+
+    if (!data) {
+        console.error('Data is not defined');
+        return;
+    }
 
     fetch('/data/profile')
         .then(response => response.json())
@@ -220,21 +231,26 @@ function updateDataInfo(data) {
             </tbody>
         </table>
     `;
+
+    populateColumnSelectors(data.columns);
 }
 
 function formatBytes(bytes) {
     if (bytes < 1024) return bytes + " B";
     const units = ['KB', 'MB', 'GB'];
-    let i = -1;
-    do {
+    let i = 0;
+    while (bytes >= 1024 && i < units.length - 1) {
         bytes /= 1024;
         i++;
-    } while (bytes >= 1024 && i < units.length - 1);
+    }
     return bytes.toFixed(1) + ' ' + units[i];
 }
 
 
 async function updateProfileData() {
+    const profileSelect = document.getElementById('profile-select');
+    const profileType = profileSelect.value;
+
     try {
         const response = await fetch('/data/profile');
         const data = await response.json();
@@ -270,10 +286,18 @@ async function updateProfileData() {
             const categoricalStats = document.getElementById('categorical-stats');
             categoricalStats.innerHTML = createCategoricalTable(data.categorical_summary, 'all');
         }
+
+        if (data.correlation) {
+            createCorrelationMatrix(data.correlation);
+        }
+
     } catch (error) {
         console.error('Error fetching profile:', error);
     }
 }
+
+document.getElementById('profile-select').addEventListener('change', updateProfileData);
+updateProfileData();
 
 function createNumericTable(summary) {
     return `
@@ -416,36 +440,6 @@ document.getElementById('plot-type').addEventListener('change', function() {
     ySelect.style.display = this.value === 'scatter' ? 'inline-block' : 'none';
 });
 
-async function createVisualization() {
-    const plotType = document.getElementById('plot-type').value;
-    const columnX = document.getElementById('column-x').value;
-    const columnY = document.getElementById('column-y').value;
-    
-    try {
-        const response = await fetch('/data/visualize', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                type: plotType,
-                x: columnX,
-                y: plotType === 'scatter' ? columnY : null
-            })
-        });
-
-        const data = await response.json();
-        if (data.error) {
-            showError(data.error);
-        } else {
-            Plotly.newPlot('plot-container', data.data);
-        }
-    } catch (error) {
-        showError('Error creating visualization');
-        console.error(error);
-    }
-}
-
 function updateDatatypesSummary(dtypes) {
     const dtypesStats = document.getElementById('dtypes-stats');
     dtypesStats.innerHTML = `
@@ -557,3 +551,53 @@ function updateMissingData(missing) {
         </div>
     `;
 }
+
+document.getElementById('plot-type').addEventListener('change', function() {
+    const ySelect = document.getElementById('column-y');
+    ySelect.style.display = this.value === 'scatter' ? 'inline-block' : 'none';
+});
+
+async function createVisualization() {
+    const plotType = document.getElementById('plot-type').value;
+    const columnX = document.getElementById('column-x').value;
+    const columnY = document.getElementById('column-y').value;
+    
+    try {
+        const response = await fetch('/data/visualize', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                type: plotType,
+                x: columnX,
+                y: plotType === 'scatter' ? columnY : null
+            })
+        });
+
+        const result = await response.json();
+        console.log('API Response:', result); // Log the response to check the format
+        if (result.error) {
+            showError(result.error);
+        } else {
+            const plotData = JSON.parse(result); // Parse the JSON string to an object
+            console.log('Plot Data:', plotData); // Log the plot data to check the format
+            Plotly.newPlot('plot-container', plotData.data);
+        }
+    } catch (error) {
+        showError('Error creating visualization');
+        console.error('Fetch Error:', error);
+    }
+}
+
+async function fetchData() {
+    try {
+        const response = await fetch('/data/info');
+        const data = await response.json();
+        updateDataInfo(data);
+    } catch (error) {
+        console.error('Error fetching data:', error);
+    }
+}
+
+fetchData();
