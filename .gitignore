@@ -25,3 +25,4 @@ logs/*
 # Data
 *.csv
 *.xlsx
+*.log

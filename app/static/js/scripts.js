@@ -127,6 +127,11 @@ function updateDataInfo(data) {
         </div>
     `;
 
+    const columnSelect = document.getElementById('column-x');
+    columnSelect.innerHTML = data.columns.map(col => 
+        `<option value="${col}">${col}</option>`
+    ).join('');
+
     fetch('/data/profile')
         .then(response => response.json())
         .then(profileData => {
@@ -402,13 +407,25 @@ function updatePlotSelectors(data) {
 }
 
 function populateColumnSelectors(columns) {
+    if (!columns || !Array.isArray(columns)) return;
+    
     const xSelect = document.getElementById('column-x');
     const ySelect = document.getElementById('column-y');
     
-    xSelect.innerHTML = columns.map(col => 
+    if (!xSelect || !ySelect) return;
+    
+    const options = columns.map(col => 
         `<option value="${col}">${col}</option>`
     ).join('');
-    ySelect.innerHTML = xSelect.innerHTML;
+    
+    xSelect.innerHTML = options;
+    ySelect.innerHTML = options;
+}
+
+function handleUploadSuccess(data) {
+    updateDataInfo(data);
+    populateColumnSelectors(data.columns);
+    enableTabs();
 }
 
 document.getElementById('plot-type').addEventListener('change', function() {
@@ -417,9 +434,15 @@ document.getElementById('plot-type').addEventListener('change', function() {
 });
 
 async function createVisualization() {
-    const plotType = document.getElementById('plot-type').value;
-    const columnX = document.getElementById('column-x').value;
-    const columnY = document.getElementById('column-y').value;
+    const plotType = document.getElementById('plot-type');
+    const columnX = document.getElementById('column-x');
+    const columnY = document.getElementById('column-y');
+    
+    // Validate inputs
+    if (!plotType || !columnX || !columnX.value) {
+        showError('Please select valid columns');
+        return;
+    }
     
     try {
         const response = await fetch('/data/visualize', {
@@ -428,21 +451,35 @@ async function createVisualization() {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                type: plotType,
-                x: columnX,
-                y: plotType === 'scatter' ? columnY : null
+                type: plotType.value,
+                x: columnX.value,
+                y: plotType.value === 'scatter' && columnY ? columnY.value : null
             })
         });
 
-        const data = await response.json();
-        if (data.error) {
-            showError(data.error);
-        } else {
-            Plotly.newPlot('plot-container', data.data);
+        const result = await response.json();
+        
+        if (result.error) {
+            showError(result.error);
+            return;
         }
+
+        // Result already contains the plot data, no need for JSON.parse
+        const layout = {
+            title: `${plotType.value.charAt(0).toUpperCase() + plotType.value.slice(1)} of ${columnX.value}`,
+            xaxis: {title: columnX.value},
+            yaxis: {title: plotType.value === 'scatter' ? columnY.value : 'Count'},
+            font: {
+                family: 'JetBrains Mono'
+            },
+            colorway: ['#1e1e1e']
+        };
+
+        Plotly.newPlot('plot-container', result.data, layout);
+
     } catch (error) {
         showError('Error creating visualization');
-        console.error(error);
+        console.error('Visualization error:', error);
     }
 }
 
