@@ -12,6 +12,10 @@ function openTab(evt, tabName) {
 
     document.getElementById(tabName).style.display = "block";
     evt.currentTarget.className += " active";
+
+    if (tabName === 'model') {
+        initializeModeling();
+    }
 }
 
 // Open default tab
@@ -74,8 +78,10 @@ document.getElementById('clean-data-btn').addEventListener('click', async functi
             showError(data.error);
         } else {
             showSuccess('Data cleaned successfully');
+            window.currentData = data;
             updateDataInfo(data);
         }
+
     } catch (error) {
         showError('Error cleaning data');
         console.error(error);
@@ -349,6 +355,16 @@ function updateCategorySelect(summary) {
     categoricalStats.innerHTML = createCategoricalTable(summary, 'all');
 }
 
+function handleCategoryChange(event) {
+    if (!window.currentCategoricalSummary) return;
+    
+    const categoricalStats = document.getElementById('categorical-stats');
+    categoricalStats.innerHTML = createCategoricalTable(
+        window.currentCategoricalSummary, 
+        event.target.value
+    );
+}
+
 function createCategoricalTable(summary, selectedColumn = 'all') {
     const filteredSummary = selectedColumn === 'all' ? 
         summary : 
@@ -406,26 +422,38 @@ function updatePlotSelectors(data) {
     populateColumnSelectors(columns);
 }
 
-function populateColumnSelectors(columns) {
-    if (!columns || !Array.isArray(columns)) return;
+function handleUploadSuccess(responseData) {
+    console.log('=== Upload Success Debug ===');
+    console.log('Response data:', responseData);
     
-    const xSelect = document.getElementById('column-x');
-    const ySelect = document.getElementById('column-y');
+    if (!responseData) return;
     
-    if (!xSelect || !ySelect) return;
+    window.hasData = true;  // Set this explicitly
+    window.currentData = {
+        ...responseData,
+        numeric_summary: null  // Will be populated later
+    };
     
-    const options = columns.map(col => 
-        `<option value="${col}">${col}</option>`
-    ).join('');
+    console.log('Window state after upload:', {
+        hasData: window.hasData,
+        currentData: window.currentData
+    });
     
-    xSelect.innerHTML = options;
-    ySelect.innerHTML = options;
-}
-
-function handleUploadSuccess(data) {
-    updateDataInfo(data);
-    populateColumnSelectors(data.columns);
+    updateDataInfo(responseData);
+    populateColumnSelectors(responseData.columns);
     enableTabs();
+
+    // Get profile data for modeling
+    fetch('/data/profile')
+        .then(response => response.json())
+        .then(profileData => {
+            console.log('Profile data received:', profileData);
+            if (!profileData.error) {
+                window.currentData.numeric_summary = profileData.numeric_summary;
+                console.log('Numeric summary updated:', window.currentData.numeric_summary);
+                initializeModeling();
+            }
+        });
 }
 
 document.getElementById('plot-type').addEventListener('change', function() {
@@ -593,4 +621,196 @@ function updateMissingData(missing) {
             `).join('')}
         </div>
     `;
+}
+
+
+
+
+
+
+
+// Modeling Functions
+
+function showModelError(message) {
+    const errorDiv = document.getElementById('model-error');
+    if (errorDiv) {
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+    }
+    console.error('Model error:', message);
+}
+
+function populateModelSelectors(data) {
+    console.log('PopulateModelSelectors called with:', data);
+    
+    const targetSelect = document.getElementById('target-column');
+    const featureSelect = document.getElementById('feature-columns');
+    
+    if (!targetSelect || !featureSelect) {
+        console.error('Select elements not found');
+        return;
+    }
+    
+    // Clear existing options
+    targetSelect.innerHTML = '';
+    featureSelect.innerHTML = '';
+    
+    // Add default option to target
+    targetSelect.add(new Option('Select target column...', ''));
+    
+    // Get numeric columns from numeric_summary
+    const numericColumns = data.numeric_summary ? Object.keys(data.numeric_summary) : [];
+    console.log('Found numeric columns:', numericColumns);
+    
+    if (numericColumns.length === 0) {
+        console.warn('No numeric columns found in data');
+        return;
+    }
+    
+    // Populate options
+    numericColumns.forEach(col => {
+        targetSelect.add(new Option(col, col));
+        featureSelect.add(new Option(col, col));
+    });
+    
+    // Configure feature select
+    featureSelect.multiple = true;
+    featureSelect.size = 5;
+}
+
+
+async function initializeModeling() {
+    try {
+        console.log('Starting modeling initialization...');
+        console.log('Current data:', window.currentData);
+        
+        if (window.currentData && window.currentData.numeric_summary) {
+            console.log('Using cached data');
+            populateModelSelectors(window.currentData);
+            return;
+        }
+        
+        // Fetch new data if needed
+        const profileResponse = await fetch('/data/profile');
+        const profileData = await profileResponse.json();
+        
+        if (profileData.error) {
+            showModelError(profileData.error);
+            return;
+        }
+        
+        if (!window.currentData) window.currentData = {};
+        window.currentData.numeric_summary = profileData.numeric_summary;
+        populateModelSelectors(window.currentData);
+        
+    } catch (error) {
+        console.error('Modeling initialization error:', error);
+        showModelError('Error initializing modeling form');
+    }
+}
+
+// Update event listeners
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize global state
+    window.hasData = false;
+    window.currentData = null;
+    
+    // Set up all event listeners
+    const modelTab = document.querySelector('button[onclick="openTab(event, \'model\')"]');
+    const trainBtn = document.querySelector('.train-btn');
+    const categorySelect = document.getElementById('category-select');
+    
+    if (modelTab) {
+        modelTab.addEventListener('click', () => {
+            console.log('Model tab clicked');
+            if (window.hasData) {
+                initializeModeling();
+            }
+        });
+    }
+    
+    if (trainBtn) {
+        trainBtn.addEventListener('click', trainModel);
+    }
+    
+    if (categorySelect) {
+        categorySelect.addEventListener('change', handleCategoryChange);
+    }
+});
+
+async function trainModel() {
+    try {
+        console.log('=== Training Model Debug ===');
+        console.log('Current state:', {
+            hasData: window.hasData,
+            currentData: window.currentData,
+            numeric_summary: window.currentData?.numeric_summary
+        });
+
+        if (!window.currentData?.numeric_summary) {
+            showModelError('No data available. Please upload data first.');
+            return;
+        }
+
+        const formData = {
+            testSize: document.getElementById('test-size').value,
+            targetColumn: document.getElementById('target-column').value,
+            featureColumns: Array.from(document.getElementById('feature-columns').selectedOptions)
+                .map(opt => opt.value)
+        };
+        
+        console.log('Form data:', formData);
+
+        const modelData = {
+            test_size: parseFloat(formData.testSize),
+            target_column: formData.targetColumn,
+            feature_columns: formData.featureColumns
+        };
+
+        console.log('Sending model request:', modelData);
+
+        const response = await fetch('/modeling', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(modelData)
+        });
+
+        const results = await response.json();
+        console.log('Model response:', results);
+
+        if (!response.ok) {
+            throw new Error(results.error || 'Server error');
+        }
+
+        displayModelResults(results);
+
+    } catch (error) {
+        console.error('Training error:', error);
+        showModelError(error.message);
+    }
+}
+
+function displayModelResults(results) {
+    const resultsDiv = document.getElementById('model-results');
+    if (!resultsDiv) return;
+    
+    resultsDiv.classList.remove('hidden');
+
+    // Update metrics
+    document.getElementById('r2-score').textContent = results.r2_score.toFixed(4);
+    document.getElementById('rmse').textContent = results.rmse.toFixed(4);
+    document.getElementById('train-samples').textContent = results.samples.train;
+    document.getElementById('test-samples').textContent = results.samples.test;
+
+    // Update feature importance table
+    const tbody = document.getElementById('importance-table').getElementsByTagName('tbody')[0];
+    if (tbody) {
+        tbody.innerHTML = Object.entries(results.feature_importance)
+            .map(([feature, importance]) => `
+                <tr>
+                    <td>${feature}</td>
+                    <td>${importance.toFixed(4)}</td>
+                </tr>
+            `).join('');
+    }
 }

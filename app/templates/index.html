@@ -105,11 +105,63 @@
         </div>
 
         <!-- Model Tab -->
+        <!-- Inside the model tab div -->
         <div id="model" class="tab-content">
             <h2>Modeling</h2>
-            <div id="model-results" class="results"></div>
+            <div class="model-form">
+                <div class="form-group">
+                    <label for="test-size">Test Size:</label>
+                    <input type="number" id="test-size" min="0.1" max="0.9" step="0.1" value="0.2">
+                </div>
+                
+                <div class="form-group">
+                    <label for="target-column">Target Column (to predict):</label>
+                    <select id="target-column"></select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="feature-columns">Feature Columns (hold Ctrl/Cmd to select multiple):</label>
+                    <select id="feature-columns" multiple></select>
+                </div>
+                
+                <button onclick="trainModel()" class="train-btn" type="button">Train Model</button>
+                <div id="model-error" class="error-message"></div>
+            </div>
+
+            <div id="model-results" class="results hidden">
+                <div class="metrics-card">
+                    <h3>Model Performance</h3>
+                    <div class="metric">
+                        <span>R² Score:</span>
+                        <span id="r2-score"></span>
+                    </div>
+                    <div class="metric">
+                        <span>RMSE:</span>
+                        <span id="rmse"></span>
+                    </div>
+                    <div class="metric">
+                        <span>Samples:</span>
+                        <div>
+                            <p>Training: <span id="train-samples"></span></p>
+                            <p>Testing: <span id="test-samples"></span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feature-importance">
+                    <h3>Feature Importance</h3>
+                    <table id="importance-table">
+                        <thead>
+                            <tr>
+                                <th>Feature</th>
+                                <th>Coefficient</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
-    </div>
 
     <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
 </body>
