@@ -16,7 +16,7 @@ class ModelService:
         else:
             raise ValueError(f"Unsupported file type: {file_path.suffix}")
      
-    def train_linear_regression(self, df, feature_columns, target_column, test_size):
+    def train_linear_regression(self, feature_columns, target_column, test_size):
         try:
             if self._df is None:
                 raise ValueError("No data loaded")

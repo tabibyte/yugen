@@ -91,14 +91,13 @@ def modeling():
             return jsonify({'error': 'No data available'}), 400
             
         file_path = Path(session['file_path'])
+        model_service.load_data(file_path)
         
         print(f"Checking file path: {file_path}")  # Debug log
         
         if not file_path.exists():
             print(f"File not found: {file_path}")  # Debug log
             return jsonify({'error': f'File not found: {file_path}'}), 400
-        
-        model_service.load_data(file_path)
         
         if request.method == 'POST':
             data = request.get_json()
