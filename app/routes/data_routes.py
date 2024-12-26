@@ -32,20 +32,19 @@ def upload_file():
         
     try:
         filename = secure_filename(file.filename)
-        temp_path = os.path.join('instance', filename)
-        file.save(temp_path)
+        # Create instance directory if it doesn't exist
+        os.makedirs('instance', exist_ok=True)
+        file_path = Path(os.path.join('instance', filename)).absolute()
+        file.save(file_path)
         
-        result = data_service.process_file(Path(temp_path))
+        result = data_service.process_file(file_path)
+        # Store absolute path in session
+        session['file_path'] = str(file_path.absolute())
+        print(f"File path stored in session: {session['file_path']}")
         
-        # Store DataFrame in session
-        if 'data' in result:
-            print("Storing DataFrame in session")  # Debug log
-            session['df'] = result['data'].to_json()
-            print("Session after upload:", dict(session))  # Debug log
-            
         return jsonify(result)
     except Exception as e:
-        print("Upload error:", str(e))  # Debug log
+        print("Upload error:", str(e))
         return jsonify({'error': str(e)}), 500
 
 @bp.route('/data/profile', methods=['GET'])
@@ -86,60 +85,37 @@ def clean_data():
 
 @bp.route('/modeling', methods=['GET', 'POST'])
 def modeling():
-    print("Modeling route called")  # Debug log
-    print("Session state:", dict(session))  # Debug log
     try:
-        if 'df' not in session:
-            print("No DataFrame in session")  # Debug log
+        if 'file_path' not in session:
+            print("No file path in session")  # Debug log
             return jsonify({'error': 'No data available'}), 400
             
-        df = pd.read_json(session['df'])
-        numeric_columns = df.select_dtypes(include=[np.number]).columns.tolist()
-        print(f"Found {len(numeric_columns)} numeric columns")  # Debug log
+        file_path = Path(session['file_path'])
+        
+        print(f"Checking file path: {file_path}")  # Debug log
+        
+        if not file_path.exists():
+            print(f"File not found: {file_path}")  # Debug log
+            return jsonify({'error': f'File not found: {file_path}'}), 400
+        
+        model_service.load_data(file_path)
         
         if request.method == 'POST':
             data = request.get_json()
-            print("Received model request:", data)  # Debug log
-            
-            if not data:
-                return jsonify({'error': 'No data provided'}), 400
-
-            # Validate inputs
-            if not all(k in data for k in ['test_size', 'target_column', 'feature_columns']):
-                missing = [k for k in ['test_size', 'target_column', 'feature_columns'] if k not in data]
-                return jsonify({'error': f'Missing parameters: {", ".join(missing)}'}), 400
-                
-            # Validate test_size
-            try:
-                test_size = float(data['test_size'])
-                if not 0 < test_size < 1:
-                    return jsonify({'error': 'Test size must be between 0 and 1'}), 400
-            except ValueError:
-                return jsonify({'error': 'Invalid test size value'}), 400
-                
-            # Validate columns
-            if data['target_column'] not in numeric_columns:
-                return jsonify({'error': 'Invalid target column'}), 400
-                
-            invalid_features = [col for col in data['feature_columns'] if col not in numeric_columns]
-            if invalid_features:
-                return jsonify({'error': f'Invalid feature columns: {", ".join(invalid_features)}'}), 400
-
             results = model_service.train_linear_regression(
-                df,
                 data['feature_columns'],
                 data['target_column'],
-                test_size
+                float(data['test_size'])
             )
-            
-            print("Model results:", results)  # Debug log
-            return jsonify({'success': True, 'results': results})
-            
+            return jsonify(results)
+        
+        df = pd.read_json(session['df'])
+        numeric_columns = df.select_dtypes(include=[np.number]).columns.tolist()
         return jsonify({
-            'success': True,
-            'numeric_columns': numeric_columns
+            'numeric_columns': numeric_columns,
+            'success': True
         })
-
+        
     except Exception as e:
-        print("Error in modeling:", str(e))
+        print("Modeling error:", str(e))
         return jsonify({'error': str(e)}), 500

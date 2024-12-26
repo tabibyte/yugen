@@ -6,15 +6,26 @@ from sklearn.metrics import r2_score, mean_squared_error
 
 class ModelService:
     def __init__(self):
-        pass
-        
+        self._df = None
+       
+    def load_data(self, file_path):
+        if file_path.suffix == '.csv':
+            self._df = pd.read_csv(file_path)
+        elif file_path.suffix == '.xlsx':
+            self._df = pd.read_excel(file_path)
+        else:
+            raise ValueError(f"Unsupported file type: {file_path.suffix}")
+     
     def train_linear_regression(self, df, feature_columns, target_column, test_size):
         try:
+            if self._df is None:
+                raise ValueError("No data loaded")
+            
             if not isinstance(test_size, float) or not 0 < test_size < 1:
                 raise ValueError("Test size must be a float between 0 and 1")
                 
-            X = df[feature_columns]
-            y = df[target_column]
+            X = self._df[feature_columns]
+            y = self._df[target_column]
             
             X_train, X_test, y_train, y_test = train_test_split(
                 X, y, test_size=test_size, random_state=42

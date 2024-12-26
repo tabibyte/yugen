@@ -11,6 +11,7 @@ class DataService:
         self._df: Optional[pd.DataFrame] = None
         self._original_df: Optional[pd.DataFrame] = None
         self._transformation_history: List[Dict[str, Any]] = []
+        self._file_path = None
         
     # app/services/data_service.py
     def process_file(self, file_path: Path) -> Dict[str, Any]:
@@ -18,6 +19,7 @@ class DataService:
         logger.info(f"Processing file: {file_path}")
         
         try:
+            self._file_path = file_path
             if not file_path.exists():
                 logger.error(f"File not found: {file_path}")
                 raise ValidationError(f"File not found: {file_path}")
@@ -168,3 +170,6 @@ class DataService:
             'operation': operation,
             'params': params
         })
+        
+    def get_file_path(self):
+        return self._file_path

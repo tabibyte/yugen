@@ -434,6 +434,8 @@ function handleUploadSuccess(responseData) {
         numeric_summary: null  // Will be populated later
     };
     
+    console.log('Upload success - stored path:', responseData.file_path);
+    
     console.log('Window state after upload:', {
         hasData: window.hasData,
         currentData: window.currentData

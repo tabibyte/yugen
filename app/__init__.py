@@ -46,6 +46,8 @@ def create_app():
     app.logger.addHandler(file_handler)
     app.logger.setLevel(logging.INFO)
     
+    app.secret_key = 'secret-key'
+    
     from app.routes import data_routes
     app.register_blueprint(data_routes.bp)
     
