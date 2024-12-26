@@ -405,7 +405,7 @@ input[type="file"] {
 .model-form input[type="number"],
 .model-form select {
     font-family: 'JetBrains Mono', monospace;
-    width: 100%;
+    width: 98.5%;
     padding: 8px;
     border: 1px solid #ddd;
     border-radius: 4px;

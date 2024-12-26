@@ -435,7 +435,7 @@ function handleUploadSuccess(responseData) {
     };
     
     console.log('Upload success - stored path:', responseData.file_path);
-    
+
     console.log('Window state after upload:', {
         hasData: window.hasData,
         currentData: window.currentData
@@ -801,6 +801,9 @@ function displayModelResults(results) {
     // Update metrics
     document.getElementById('r2-score').textContent = results.r2_score.toFixed(4);
     document.getElementById('rmse').textContent = results.rmse.toFixed(4);
+    document.getElementById('mae').textContent = results.mae.toFixed(4);
+    document.getElementById('precision').textContent = results.precision.toFixed(4);
+    document.getElementById('recall').textContent = results.recall.toFixed(4);
     document.getElementById('train-samples').textContent = results.samples.train;
     document.getElementById('test-samples').textContent = results.samples.test;
 

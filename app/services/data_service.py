@@ -38,7 +38,7 @@ class DataService:
             logger.info(f"File processed successfully. Shape: {self._df.shape}")
             
             # Clean up temp file
-            file_path.unlink(missing_ok=True)
+            # file_path.unlink(missing_ok=True)
             
             return self._get_data_info()
             
