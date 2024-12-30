@@ -5,6 +5,7 @@ __pycache__/
 .Python
 *.egg-info/
 *.egg
+*.pyc
 
 # Environment
 .env
