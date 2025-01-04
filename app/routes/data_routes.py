@@ -20,29 +20,36 @@ def index():
 
 @bp.route('/data/upload', methods=['POST'])
 def upload_file():
+    """Stores the data temporarily in the session and returns the data info"""
+    
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
         
     file = request.files['file']
+    
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
         
     if not file.filename.endswith(('.csv', '.xlsx')):
         return jsonify({'error': 'Invalid file type'}), 400
-        
+
     try:
+        
+        # Save file to instance folder
+        
         filename = secure_filename(file.filename)
-        # Create instance directory if it doesn't exist
         os.makedirs('instance', exist_ok=True)
         file_path = Path(os.path.join('instance', filename)).absolute()
         file.save(file_path)
         
         result = data_service.process_file(file_path)
-        # Store absolute path in session
+        
         session['file_path'] = str(file_path.absolute())
+
         print(f"File path stored in session: {session['file_path']}")
         
         return jsonify(result)
+    
     except Exception as e:
         print("Upload error:", str(e))
         return jsonify({'error': str(e)}), 500

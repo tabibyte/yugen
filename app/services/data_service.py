@@ -13,7 +13,6 @@ class DataService:
         self._transformation_history: List[Dict[str, Any]] = []
         self._file_path = None
         
-    # app/services/data_service.py
     def process_file(self, file_path: Path) -> Dict[str, Any]:
         """Process uploaded file and return data info"""
         logger.info(f"Processing file: {file_path}")
@@ -140,8 +139,8 @@ class DataService:
             'memory_usage': int(self._df.memory_usage().sum()),
             'dtypes': {k: str(v) for k, v in self._df.dtypes.items()},
             'transformations': self._transformation_history,
-            'preview': self._df.head().to_dict('records'),  # Add preview
-            'missing': self._df.isnull().sum().to_dict()  # Add missing values info
+            'preview': self._df.head().to_dict('records'),
+            'missing': self._df.isnull().sum().to_dict()
         }
     
     def _get_numeric_summary(self) -> Dict[str, Dict[str, float]]:
