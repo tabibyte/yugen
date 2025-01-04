@@ -9,6 +9,7 @@ class ModelService:
         self._df = None
        
     def load_data(self, file_path):
+        
         if file_path.suffix == '.csv':
             self._df = pd.read_csv(file_path)
         elif file_path.suffix == '.xlsx':
