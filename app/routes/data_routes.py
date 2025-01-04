@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 from werkzeug.utils import secure_filename
+import tempfile
 import os
 from app.services.data_service import DataService
 from app.services.model_service import ModelService
@@ -15,21 +16,33 @@ model_service = ModelService()
 def index():
     return render_template('index.html')
 
+def cleanup_temp_files(error=None):
+    """
+    Cleanup temporary files after request.
+    This function is registered as a teardown function for the Flask app. It removes the temporary file stored in the session after each request.
+    Args:
+        error (Exception, optional): An error object if an error occurred during the request. Defaults to None.
+    """
+    
+    temp_file = session.get('file_path')
+    if temp_file:
+        try:
+            Path(temp_file).unlink(missing_ok=True)
+            session.pop('file_path', None)
+        except Exception as e:
+            print(f"Cleanup error: {str(e)}")
+
+bp.teardown_app_request(cleanup_temp_files)
+
 @bp.route('/data/upload', methods=['POST'])
 def upload_file():
     """
-    Handle file upload via POST request.
-    This route accepts a file upload, validates the file type, saves the file to the instance folder,
-    processes the file using the data_service, and stores the file path in the session.
+    Route to upload a data file.
+    This route handles POST requests to upload a CSV or Excel file, saves it to a temporary location, processes it, and returns the result.
     Returns:
-        Response: JSON response containing basic info about the data or an error message.
+        Response: A JSON response containing the result of the file processing or an error message.
     Raises:
-        Exception: If there is an error during file upload or processing.
-    HTTP Status Codes:
-        200: File uploaded and processed successfully.
-        400: Bad request due to missing file, no selected file, or invalid file type.
-        500: Internal server error during file upload or processing.
-        
+        Exception: If an error occurs during file upload or processing, a JSON response with the error message and a 500 status code is returned.
     """
     
     if 'file' not in request.files:
@@ -44,24 +57,27 @@ def upload_file():
         return jsonify({'error': 'Invalid file type'}), 400
 
     try:
+        # Create temp file with correct extension
+        suffix = Path(file.filename).suffix
+        temp_dir = tempfile.gettempdir()
+        temp_file = tempfile.NamedTemporaryFile(suffix=suffix, delete=False, dir=temp_dir)
+        temp_path = Path(temp_file.name)
         
-        # Save file to instance folder
+        # Save uploaded file to temp location
+        file.save(temp_path)
         
-        filename = secure_filename(file.filename)
-        os.makedirs('instance', exist_ok=True)
-        file_path = Path(os.path.join('instance', filename)).absolute()
-        file.save(file_path)
+        # Process file
+        result = data_service.process_file(temp_path)
         
-        result = data_service.process_file(file_path)
-        
-        session['file_path'] = str(file_path.absolute())
-
-        print(f"File path stored in session: {session['file_path']}")
+        # Store temp path in session for cleanup
+        session['file_path'] = str(temp_path)
         
         return jsonify(result)
     
     except Exception as e:
         print("Upload error:", str(e))
+        if 'temp_path' in locals():
+            temp_path.unlink(missing_ok=True)
         return jsonify({'error': str(e)}), 500
 
 @bp.route('/data/profile', methods=['GET'])
