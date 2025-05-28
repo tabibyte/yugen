@@ -1,4 +1,3 @@
-# Python
 __pycache__/
 *.py[cod]
 *.so
@@ -6,24 +5,19 @@ __pycache__/
 *.egg-info/
 *.egg
 *.pyc
-
-# Environment
 .env
 .venv
 env/
 venv/
-
-# IDE
 .vscode/
 .idea/
-
-# Project specific
-instance/*
-!instance/.gitignore
-logs/*
+instance/
+!instance/.gitignore=
 !logs/.gitignore
 
-# Data
 *.csv
 *.xlsx
 *.log
+
+/.pytest_cache/
+/logs/
