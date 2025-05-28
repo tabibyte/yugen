@@ -50,12 +50,13 @@ def upload_file():
         
     file = request.files['file']
     
-    if file.filename == '':
+    if not file.filename or file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
         
     if not file.filename.endswith(('.csv', '.xlsx')):
         return jsonify({'error': 'Invalid file type'}), 400
 
+    temp_path = None
     try:
         # Create temp file with correct extension
         suffix = Path(file.filename).suffix
@@ -76,7 +77,7 @@ def upload_file():
     
     except Exception as e:
         print("Upload error:", str(e))
-        if 'temp_path' in locals():
+        if temp_path:
             temp_path.unlink(missing_ok=True)
         return jsonify({'error': str(e)}), 500
 
@@ -109,6 +110,9 @@ def create_visualization():
     """
     
     try:
+        if not request.json:
+            return jsonify({'error': 'No JSON data provided'}), 400
+            
         plot_type = request.json.get('type')
         x = request.json.get('x')
         y = request.json.get('y')
@@ -132,6 +136,9 @@ def clean_data():
     """
     
     options = request.json
+    
+    if options is None:
+        return jsonify({'error': 'No JSON data provided'}), 400
     
     try:
         result = data_service.clean_data(options)

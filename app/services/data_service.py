@@ -77,7 +77,7 @@ class DataService:
         except Exception as e:
             raise DataProcessingError(f"Failed to generate profile: {str(e)}")
     
-    def get_plot_data(self, plot_type: str, x: str, y: str = None) -> Dict[str, Any]:
+    def get_plot_data(self, plot_type: str, x: str, y: Optional[str] = None) -> Dict[str, Any]:
         if self._df is None:
             raise ValidationError("No data loaded")
             
@@ -93,6 +93,8 @@ class DataService:
                 'mode': 'markers',
                 'type': 'scatter'
             }
+        else:
+            raise ValidationError(f"Unsupported plot type: {plot_type}")
         return {'data': [data]}
     
     def clean_data(self, options: Dict[str, bool]) -> Dict[str, Any]:
@@ -133,6 +135,9 @@ class DataService:
             raise DataProcessingError(f"Failed to reset data: {str(e)}")
     
     def _get_data_info(self) -> Dict[str, Any]:
+        if self._df is None:
+            raise ValidationError("No data loaded")
+            
         return {
             'shape': tuple(map(int, self._df.shape)),
             'columns': self._df.columns.tolist(),
@@ -145,6 +150,8 @@ class DataService:
     
     def _get_numeric_summary(self) -> Dict[str, Dict[str, float]]:
         """Get summary statistics for numeric columns"""
+        if self._df is None:
+            return {}
         numeric_cols = self._df.select_dtypes(include=['int64', 'float64']).columns
         return {
             col: {
@@ -157,6 +164,8 @@ class DataService:
     
     def _get_categorical_summary(self) -> Dict[str, Dict[str, int]]:
         """Get summary statistics for categorical columns"""
+        if self._df is None:
+            return {}
         categorical_cols = self._df.select_dtypes(include=['object', 'category']).columns
         return {
             col: self._df[col].value_counts().to_dict()
