@@ -2,9 +2,7 @@ from flask import Blueprint, jsonify, request, render_template, session
 import numpy as np
 import pandas as pd
 from pathlib import Path
-from werkzeug.utils import secure_filename
 import tempfile
-import os
 from app.services.data_service import DataService
 from app.services.model_service import ModelService
 
