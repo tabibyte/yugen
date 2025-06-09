@@ -15,7 +15,7 @@ class CustomJSONProvider(JSONProvider):
 
         return json.dumps(obj, default=default, **kwargs)
 
-    def loads(self, s: str, **kwargs):
+    def loads(self, s: str | bytes, **kwargs):
         return json.loads(s, **kwargs)
 
     def _default(self, o):
@@ -25,4 +25,4 @@ class CustomJSONProvider(JSONProvider):
             return float(o)
         if isinstance(o, np.ndarray):
             return o.tolist()
-        return super()._default(o)
+        raise TypeError(f'Object of type {type(o)} is not JSON serializable')
