@@ -5,6 +5,7 @@ from pathlib import Path
 import tempfile
 from app.services.data_service import DataService
 from app.services.model_service import ModelService
+import atexit
 
 bp = Blueprint('data', __name__, url_prefix='/')
 data_service = DataService()
@@ -106,7 +107,7 @@ def create_visualization():
 def clean_data():
     """
     Route to clean data.
-    This route handles POST requests to clean the data based on provided options.
+    This route handles POST requests to clean the data based on provided options. 
     Args:
         None
     Returns:
@@ -123,9 +124,28 @@ def clean_data():
     try:
         result = data_service.clean_data(options)
         
-        # Update session with cleaned data
         if 'data' in result:
-            session['df'] = result['data'].to_json()
+            original_path = Path(session['file_path'])
+            suffix = original_path.suffix
+            
+            temp_dir = tempfile.gettempdir()
+            
+            cleaned_temp_file = tempfile.NamedTemporaryFile(
+                suffix=f"_cleaned{suffix}", 
+                delete=False, 
+                dir=temp_dir
+            )
+            cleaned_temp_path = Path(cleaned_temp_file.name)
+            
+            cleaned_df = result['data']
+            if suffix == '.csv':
+                cleaned_df.to_csv(cleaned_temp_path, index=False)
+            elif suffix == '.xlsx':
+                cleaned_df.to_excel(cleaned_temp_path, index=False)
+                     
+            session['cleaned_file_path'] = str(cleaned_temp_path)
+            
+            
         return jsonify(result)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
