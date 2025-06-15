@@ -14,24 +14,6 @@ model_service = ModelService()
 def index():
     return render_template('index.html')
 
-def cleanup_temp_files(error=None):
-    """
-    Cleanup temporary files after request.
-    This function is registered as a teardown function for the Flask app. It removes the temporary file stored in the session after each request.
-    Args:
-        error (Exception, optional): An error object if an error occurred during the request. Defaults to None.
-    """
-    
-    temp_file = session.get('file_path')
-    if temp_file:
-        try:
-            Path(temp_file).unlink(missing_ok=True)
-            session.pop('file_path', None)
-        except Exception as e:
-            print(f"Cleanup error: {str(e)}")
-
-bp.teardown_app_request(cleanup_temp_files)
-
 @bp.route('/data/upload', methods=['POST'])
 def upload_file():
     """
@@ -68,7 +50,7 @@ def upload_file():
         # Process file
         result = data_service.process_file(temp_path)
         
-        # Store temp path in session for cleanup
+        # Store temp path in session
         session['file_path'] = str(temp_path)
         
         return jsonify(result)
@@ -80,18 +62,18 @@ def upload_file():
         return jsonify({'error': str(e)}), 500
 
 @bp.route('/data/profile', methods=['GET'])
-def get_profile():
+def get_profiling_data():
     """
-    Route to get user profile data.
-    This route handles GET requests to retrieve user profile data from the data service.
+    Route to get profiling data.
+    This route handles GET requests to retrieve profiling data from the data service.
     Returns:
         Response: A JSON response containing profiling data or an error message.
     Raises:
-        Exception: If an error occurs while retrieving the profile data, a JSON response with the error message and a 500 status code is returned.
+        Exception: If an error occurs while retrieving the profiling data, a JSON response with the error message and a 500 status code is returned.
     """
     
     try:
-        result = data_service.get_profile()
+        result = data_service.profiling()
         return jsonify(result)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -174,12 +156,20 @@ def modeling():
             return jsonify({'error': 'No data available'}), 400
             
         file_path = Path(session['file_path'])
+        
         model_service.load_data(file_path)
         
         if not file_path.exists():
             return jsonify({'error': f'File not found: {file_path}'}), 400
         
-        if request.method == 'POST':
+        if request.method == 'GET':
+            df = pd.read_json(session['df'])
+            numeric_columns = df.select_dtypes(include=[np.number]).columns.tolist()
+            return jsonify({
+                'numeric_columns': numeric_columns,
+                'success': True
+            })            
+        elif request.method == 'POST':
             data = request.get_json()
             results = model_service.train_linear_regression(
                 data['feature_columns'],
@@ -187,13 +177,8 @@ def modeling():
                 float(data['test_size'])
             )
             return jsonify(results)
-        
-        df = pd.read_json(session['df'])
-        numeric_columns = df.select_dtypes(include=[np.number]).columns.tolist()
-        return jsonify({
-            'numeric_columns': numeric_columns,
-            'success': True
-        })
+        else:
+            return jsonify({'error': 'Method not allowed'}), 405
         
     except Exception as e:
         print("Modeling error:", str(e))

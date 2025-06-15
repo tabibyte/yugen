@@ -51,7 +51,7 @@ class DataService:
             logger.error(f"Unexpected error: {str(e)}")
             raise DataProcessingError(f"Failed to process file: {str(e)}")
     
-    def get_profile(self) -> Dict[str, Any]:
+    def profiling(self) -> Dict[str, Any]:
         if self._df is None:
             raise ValidationError("No data loaded")
             
