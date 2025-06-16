@@ -1,28 +1,27 @@
-from flask.json.provider import JSONProvider
-import numpy as np
 import json
+import numpy as np
+import pandas as pd
+from flask.json.provider import JSONProvider
 
 class CustomJSONProvider(JSONProvider):
     def dumps(self, obj, **kwargs):
-        def default(o):
-            if isinstance(o, np.integer):
-                return int(o)
-            if isinstance(o, np.floating):
-                return float(o)
-            if isinstance(o, np.ndarray):
-                return o.tolist()
-            raise TypeError(f'Object of type {type(o)} is not JSON serializable')
+        return json.dumps(obj, default=self.default, **kwargs)
 
-        return json.dumps(obj, default=default, **kwargs)
-
-    def loads(self, s: str | bytes, **kwargs):
+    def loads(self, s, **kwargs):
         return json.loads(s, **kwargs)
 
-    def _default(self, o):
-        if isinstance(o, np.integer):
-            return int(o)
-        if isinstance(o, np.floating):
-            return float(o)
-        if isinstance(o, np.ndarray):
-            return o.tolist()
-        raise TypeError(f'Object of type {type(o)} is not JSON serializable')
+    @staticmethod
+    def default(obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            if np.isnan(obj):
+                return None
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        elif pd.isna(obj):
+            return None
+        elif hasattr(obj, 'isoformat'):  # datetime objects
+            return obj.isoformat()
+        raise TypeError(f'Object of type {type(obj)} is not JSON serializable')

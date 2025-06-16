@@ -116,22 +116,29 @@ function updateProfile(data) {
 }
 
 function updateDataInfo(data) {
+    if (!data) {
+        console.error('No data provided to updateDataInfo');
+        return;
+    }
+
     const infoCards = document.querySelector('.info-cards');
-    infoCards.innerHTML = `
-        <h3>Data Information</h3>
-        <div class="info-card">
-            <span>Rows:</span>
-            <span>${data.shape[0]}</span>
-        </div>
-        <div class="info-card">
-            <span>Columns:</span>
-            <span>${data.shape[1]}</span>
-        </div>
-        <div class="info-card">
-            <span>Size:</span>
-            <span>${formatBytes(data.memory_usage)}</span>
-        </div>
-    `;
+    if (infoCards) {
+        infoCards.innerHTML = `
+            <h3>Data Information</h3>
+            <div class="info-card">
+                <span>Rows:</span>
+                <span>${data.shape ? data.shape[0] : 'N/A'}</span>
+            </div>
+            <div class="info-card">
+                <span>Columns:</span>
+                <span>${data.shape ? data.shape[1] : 'N/A'}</span>
+            </div>
+            <div class="info-card">
+                <span>Size:</span>
+                <span>${data.memory_usage ? formatBytes(data.memory_usage) : 'N/A'}</span>
+            </div>
+        `;
+    }
 
     const columnSelect = document.getElementById('column-x');
     columnSelect.innerHTML = data.columns.map(col => 
@@ -214,23 +221,29 @@ function updateDataInfo(data) {
     }
     
     const dataPreview = document.querySelector('.data-preview');
-    dataPreview.innerHTML = `
-        <h3>Data Preview</h3>
-        <table>
-            <thead>
-                <tr>${data.columns.map(col => 
-                    `<th>${col}</th>`
-                ).join('')}</tr>
-            </thead>
-            <tbody>
-                ${data.preview.map(row => 
-                    `<tr>${data.columns.map(col => 
-                        `<td>${row[col] ?? ''}</td>`
-                    ).join('')}</tr>`
-                ).join('')}
-            </tbody>
-        </table>
-    `;
+    if (dataPreview && data.preview && data.columns) {
+        dataPreview.innerHTML = `
+            <h3>Data Preview</h3>
+            <table>
+                <thead>
+                    <tr>${data.columns.map(col => `<th>${col}</th>`).join('')}</tr>
+                </thead>
+                <tbody>
+                    ${data.preview.map(row => 
+                        `<tr>${data.columns.map(col => {
+                            const value = row[col];
+                            const displayValue = value !== null && value !== undefined ? value : '<span style="color: #999;">null</span>';
+                            return `<td>${displayValue}</td>`;
+                        }).join('')}</tr>`
+                    ).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    if (data.columns) {
+        populateColumnSelectors(data.columns);
+    }
 }
 
 function formatBytes(bytes) {
