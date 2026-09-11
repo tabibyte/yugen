@@ -52,7 +52,7 @@ document.getElementById('upload-form').addEventListener('submit', async function
             enableTabs();
         }
     } catch (error) {
-        showError('Error processing file');
+        showError('');
         console.error(error);
     }
 });
